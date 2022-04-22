@@ -41,6 +41,7 @@ pub enum Command {
     UrlHandlers,
     Find(Vec<Filter>),
     Search(Vec<Filter>),
+    Volume(i64),
 }
 
 impl FromStr for Command {
@@ -183,6 +184,11 @@ impl FromStr for Command {
             "urlhandlers" => Command::UrlHandlers,
             "find" => Command::Find(parse_filters(&mut args, &cmd)?),
             "search" => Command::Search(parse_filters(&mut args, &cmd)?),
+            "volume" => Command::Volume(
+                args.next()
+                    .ok_or_else(|| MpdError::wrong_argument_count(&cmd))?
+                    .parse()?,
+            ),
             _ => return Err(MpdError::unknown_command(&cmd)),
         })
     }

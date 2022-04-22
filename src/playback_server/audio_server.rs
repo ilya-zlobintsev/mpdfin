@@ -1,4 +1,5 @@
 use libmpv::Mpv;
+use tracing::trace;
 use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
@@ -21,7 +22,7 @@ impl AudioServer {
 
     pub fn play_file(&self, file_path: &str) {
         let args = [&format!("\"{}\"", file_path), "replace"];
-        
+
         let mut current_file_guard = self.current_file.write().unwrap();
 
         if *current_file_guard != file_path {
@@ -42,5 +43,12 @@ impl AudioServer {
         self.mpv
             .get_property("volume")
             .expect("Failed to get volume")
+    }
+
+    pub fn set_volume(&self, volume: i64) {
+        trace!("Setting volume to {volume}");
+        self.mpv
+            .set_property("volume", volume)
+            .expect("Failed to set volume");
     }
 }

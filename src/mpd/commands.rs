@@ -170,6 +170,10 @@ impl MpdServer {
             Command::UrlHandlers => String::new(),
             Command::Find(filters) => serializer::to_string(&self.search(filters, false).await)?,
             Command::Search(filters) => serializer::to_string(&self.search(filters, true).await)?,
+            Command::Volume(vol) => {
+                self.volume(vol);
+                String::new()
+            }
         })
     }
 
@@ -350,7 +354,15 @@ impl MpdServer {
         }
     }
 
-    pub async fn search(&self, filters: Vec<Filter>, ignore_case: bool) -> Vec<ListEntry> {
+    fn volume(&self, vol: i64) {
+        let current_vol = self.playback_server.audio_server.get_volume();
+
+        self.playback_server
+            .audio_server
+            .set_volume(current_vol + vol);
+    }
+
+    async fn search(&self, filters: Vec<Filter>, ignore_case: bool) -> Vec<ListEntry> {
         let storage_guard = self.db.get_storage().await;
 
         let mut results = vec![];

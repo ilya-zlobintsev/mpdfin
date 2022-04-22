@@ -14,9 +14,9 @@ pub mod queue;
 
 #[derive(Clone)]
 pub struct PlaybackServer {
-    options: PlaybackOptions,
+    pub audio_server: AudioServer,
     pub queue: Queue,
-    audio_server: AudioServer,
+    options: PlaybackOptions,
     update_tx: broadcast::Sender<Subsystem>,
     db: Database,
 }
@@ -24,11 +24,11 @@ pub struct PlaybackServer {
 impl PlaybackServer {
     pub fn new(mpris: bool, db: Database, update_tx: broadcast::Sender<Subsystem>) -> Self {
         let server = Self {
-            options: Default::default(),
-            queue: Queue::new(update_tx.clone()),
-            db,
             audio_server: AudioServer::new(),
+            queue: Queue::new(update_tx.clone()),
+            options: Default::default(),
             update_tx,
+            db,
         };
 
         #[cfg(not(target_os = "windows"))]
@@ -163,7 +163,7 @@ impl PlaybackServer {
             random: self.random(),
             single: self.single(),
             consume: self.consume(),
-            volume: 0,
+            volume: self.audio_server.get_volume() as u8,
             state: self.state(),
             playlist: 0,
             playlist_length: 0,

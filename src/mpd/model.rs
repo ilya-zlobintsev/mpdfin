@@ -496,7 +496,7 @@ fn parse_position(pos_str: &str, cmd: &str) -> Result<Position, MpdError> {
                 .map_err(|_| MpdError::integer_expeted(cmd))?,
         )
     } else {
-        Position::Absoltue(
+        Position::Absolute(
             pos_str
                 .parse()
                 .map_err(|_| MpdError::integer_expeted(cmd))?,

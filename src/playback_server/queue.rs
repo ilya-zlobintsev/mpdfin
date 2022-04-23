@@ -69,7 +69,7 @@ impl Queue {
             None => queue.len().checked_sub(1).unwrap_or_default(),
             Some(pos) => {
                 let pos = match pos {
-                    Position::Absoltue(pos) => pos as usize,
+                    Position::Absolute(pos) => pos as usize,
                     Position::After(_) => todo!(),
                     Position::Before(_) => todo!(),
                 };
@@ -84,7 +84,7 @@ impl Queue {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Position {
-    Absoltue(i32),
+    Absolute(i32),
     After(i32),
     Before(i32),
 }

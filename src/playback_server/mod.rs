@@ -14,7 +14,7 @@ pub mod queue;
 
 #[derive(Clone)]
 pub struct PlaybackServer {
-    pub audio_server: AudioServer,
+    audio_server: AudioServer,
     pub queue: Queue,
     options: PlaybackOptions,
     update_tx: broadcast::Sender<Subsystem>,
@@ -188,5 +188,14 @@ impl PlaybackServer {
             suffix: "mp3",
             mime_type: vec!["audio/mpeg"],
         }]
+    }
+
+    pub fn get_volume(&self) -> i64 {
+        self.audio_server.get_volume()
+    }
+
+    pub fn set_volume(&self, vol: i64) {
+        self.audio_server.set_volume(vol);
+        self.update_tx.send(Subsystem::Mixer).unwrap();
     }
 }

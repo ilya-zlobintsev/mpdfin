@@ -411,7 +411,7 @@ mod tests {
     use std::collections::{BTreeMap, HashMap};
 
     use crate::mpd::{
-        model::{Decoder, DirectoryEntry, SongEntry, ListEntry},
+        model::{Decoder, DirectoryEntry, ListEntry, SongEntry},
         serializer::to_string,
     };
 

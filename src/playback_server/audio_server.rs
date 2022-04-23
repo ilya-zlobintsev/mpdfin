@@ -1,6 +1,6 @@
 use libmpv::Mpv;
-use tracing::trace;
 use std::sync::{Arc, RwLock};
+use tracing::trace;
 
 #[derive(Clone)]
 pub struct AudioServer {

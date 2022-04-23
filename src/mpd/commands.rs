@@ -174,6 +174,10 @@ impl MpdServer {
                 self.volume(vol);
                 String::new()
             }
+            Command::SetVol(vol) => {
+                self.setvol(vol)?;
+                String::new()
+            }
         })
     }
 
@@ -355,11 +359,28 @@ impl MpdServer {
     }
 
     fn volume(&self, vol: i64) {
-        let current_vol = self.playback_server.audio_server.get_volume();
+        let current_vol = self.playback_server.get_volume();
 
-        self.playback_server
-            .audio_server
-            .set_volume(current_vol + vol);
+        self.playback_server.set_volume(current_vol + vol);
+    }
+
+    fn setvol(&self, vol: i64) -> Result<()> {
+        if vol < 0 {
+            Err(MpdError::new(
+                Some("setvol".to_owned()),
+                "number too small".to_owned(),
+                Ack::Arg,
+            ))
+        } else if vol > 1000 {
+            Err(MpdError::new(
+                Some("setvol".to_owned()),
+                "number too big".to_owned(),
+                Ack::Arg,
+            ))
+        } else {
+            self.playback_server.set_volume(vol);
+            Ok(())
+        }
     }
 
     async fn search(&self, filters: Vec<Filter>, ignore_case: bool) -> Vec<ListEntry> {

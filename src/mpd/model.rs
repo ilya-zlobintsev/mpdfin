@@ -42,6 +42,7 @@ pub enum Command {
     Find(Vec<Filter>),
     Search(Vec<Filter>),
     Volume(i64),
+    SetVol(i64),
 }
 
 impl FromStr for Command {
@@ -185,6 +186,11 @@ impl FromStr for Command {
             "find" => Command::Find(parse_filters(&mut args, &cmd)?),
             "search" => Command::Search(parse_filters(&mut args, &cmd)?),
             "volume" => Command::Volume(
+                args.next()
+                    .ok_or_else(|| MpdError::wrong_argument_count(&cmd))?
+                    .parse()?,
+            ),
+            "setvol" => Command::SetVol(
                 args.next()
                     .ok_or_else(|| MpdError::wrong_argument_count(&cmd))?
                     .parse()?,

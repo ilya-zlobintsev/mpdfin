@@ -80,6 +80,12 @@ impl Queue {
         queue.insert(pos, QueueItem { song, id: pos, pos });
         pos
     }
+
+    pub fn clear(&self) {
+        self.inner.write().unwrap().clear();
+        self.current_position.store(0, Ordering::Relaxed);
+        self.update_tx.send(Subsystem::Playlist).unwrap();
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]

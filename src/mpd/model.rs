@@ -43,6 +43,7 @@ pub enum Command {
     Search(Vec<Filter>),
     Volume(i64),
     SetVol(i64),
+    Clear,
 }
 
 impl FromStr for Command {
@@ -195,6 +196,7 @@ impl FromStr for Command {
                     .ok_or_else(|| MpdError::wrong_argument_count(&cmd))?
                     .parse()?,
             ),
+            "clear" => Command::Clear,
             _ => return Err(MpdError::unknown_command(&cmd)),
         })
     }

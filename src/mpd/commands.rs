@@ -178,6 +178,10 @@ impl MpdServer {
                 self.setvol(vol)?;
                 String::new()
             }
+            Command::Clear => {
+                self.playback_server.queue.clear();
+                String::new()
+            }
         })
     }
 

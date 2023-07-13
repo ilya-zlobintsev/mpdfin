@@ -42,6 +42,8 @@ class CommandHandler
             VLCState.Paused => "pause"u8,
             _ => "stop"u8,
         });
+        response.Add("playlist"u8, Player.PlaylistVersion.ToU8String());
+        response.Add("playlistlength"u8, Player.Queue.Count.ToU8String());
 
         return response;
     }

@@ -1,5 +1,7 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using Serilog;
 
 namespace Mpdfin;
 
@@ -54,11 +56,17 @@ readonly record struct Response
 
     public void Extend(Response other)
     {
-        Contents.Write(other.Contents.GetSpan());
+        Log.Debug($"Combining with other response {other}");
+        Contents.Write(other.Contents.WrittenSpan);
     }
 
     public ReadOnlyMemory<byte> GetMemory()
     {
         return Contents.WrittenMemory;
+    }
+
+    public override string ToString()
+    {
+        return Encoding.UTF8.GetString(Contents.WrittenMemory.Span).Replace("\n", " ");
     }
 }

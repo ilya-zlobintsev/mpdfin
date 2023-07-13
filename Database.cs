@@ -31,7 +31,6 @@ class Database
 
     static SdkClientSettings ClientSettings()
     {
-
         SdkClientSettings settings = new();
         settings.InitializeClientSettings("dotnet test", "0.0.1", "desktop", "1");
         return settings;

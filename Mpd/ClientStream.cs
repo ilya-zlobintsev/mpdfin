@@ -21,8 +21,6 @@ class ClientStream
 
     public async Task Write(ReadOnlyMemory<byte> data)
     {
-        Log.Debug($"Writing {data.ToUtf16().Trim().Replace('\n', ' ')}"); // TODO: optimize?
-
         if (data.Length > 0)
         {
             await Stream.WriteAsync(data);
@@ -41,6 +39,7 @@ class ClientStream
 
     public async Task WriteResponse(Response response)
     {
+        Log.Debug($"Writing response {response}");
         await Write(response.GetMemory());
         await Write("OK"u8.ToArray());
     }

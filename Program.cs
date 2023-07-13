@@ -52,77 +52,77 @@ static class Program
         {
             listener.Stop();
         }
+    }
 
-        async static Task HandleStream(TcpClient client, CommandHandler commandHandler)
+    async static Task HandleStream(TcpClient client, CommandHandler commandHandler)
+    {
+        // For some reason `await foreach` doesn't yield back
+        await Task.Yield();
+
+        await using ClientStream stream = new(client);
+        await stream.WriteGreeting();
+
+        var requests = stream.ReadCommands();
+
+        await foreach (var request in requests)
         {
-            // For some reason `await foreach` doesn't yield back
-            await Task.Yield();
-
-            await using ClientStream stream = new(client);
-            await stream.WriteGreeting();
-
-            var requests = stream.ReadCommands();
-
-            await foreach (var request in requests)
+            try
             {
-                try
+                var response = request.Command switch
                 {
-                    var response = request.Command switch
-                    {
-                        Command.command_list_begin => await HandleCommandList(requests, commandHandler, false),
-                        Command.command_list_ok_begin => await HandleCommandList(requests, commandHandler, true),
-                        _ => commandHandler.HandleRequest(request),
-                    };
-                    await stream.WriteResponse(response);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex.ToString());
-                    await stream.WriteError(Ack.UNKNOWN);
-                }
+                    Command.command_list_begin => await HandleCommandList(requests, commandHandler, false),
+                    Command.command_list_ok_begin => await HandleCommandList(requests, commandHandler, true),
+                    _ => commandHandler.HandleRequest(request),
+                };
+                await stream.WriteResponse(response);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+                await stream.WriteError(Ack.UNKNOWN);
             }
         }
+    }
 
-        async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler, bool printOk)
+    async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler, bool printOk)
+    {
+        List<Request> requestList = new();
+
+        bool end = false;
+        Log.Debug("Processing command list");
+        await foreach (var request in incomingRequests)
         {
-            List<Request> requestList = new();
-
-            bool end = false;
-            Log.Debug("Processing command list");
-            await foreach (var request in incomingRequests)
+            switch (request.Command)
             {
-                switch (request.Command)
-                {
-                    case Command.command_list_end:
-                        Log.Debug("Exiting command list");
-                        end = true;
-                        break;
-                    default:
-                        Log.Debug($"Queueing command {request.Command}");
-                        requestList.Add(request);
-                        break;
-                }
-
-                if (end)
-                {
+                case Command.command_list_end:
+                    Log.Debug("Exiting command list");
+                    end = true;
                     break;
-                }
+                default:
+                    Log.Debug($"Queueing command {request.Command}");
+                    requestList.Add(request);
+                    break;
             }
 
-            Response totalResponse = new();
-
-            foreach (var request in requestList)
+            if (end)
             {
-                var response = handler.HandleRequest(request);
-                totalResponse.Extend(response);
-
-                if (printOk)
-                {
-                    totalResponse.AddListOk();
-                }
+                break;
             }
-
-            return totalResponse;
         }
+
+        Response totalResponse = new();
+
+        foreach (var request in requestList)
+        {
+            var response = handler.HandleRequest(request);
+            totalResponse.Extend(response);
+
+            if (printOk)
+            {
+                totalResponse.AddListOk();
+            }
+        }
+
+        return totalResponse;
     }
 }

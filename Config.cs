@@ -12,7 +12,7 @@ internal partial class SourceGenerationContext : JsonSerializerContext
 
 record Config
 {
-    public required JellyfinConfig Jellyfin;
+    public required JellyfinConfig Jellyfin { get; init; }
 
     public static Config Load()
     {
@@ -26,7 +26,7 @@ record Config
 
 record JellyfinConfig
 {
-    public required string ServerUrl;
-    public required string Username;
-    public required string Password;
+    public required string ServerUrl { get; init; }
+    public required string Username { get; init; }
+    public required string Password { get; init; }
 }

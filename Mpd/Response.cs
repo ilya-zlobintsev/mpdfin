@@ -26,22 +26,12 @@ readonly record struct Response
         Add(key, value);
     }
 
-    public void Add((string, string) kv)
-    {
-        Add(kv.Item1.ToU8String(), kv.Item2.ToU8String());
-    }
-
     public void Add(ReadOnlySpan<byte> key, string value)
     {
         Add(key, value.ToU8String());
     }
 
-    public void Add(ReadOnlySpan<byte> key, U8String value)
-    {
-        Add(key, value.AsSpan());
-    }
-
-    public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<Byte> value)
+    public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Contents.Write(key);
         Contents.Write(": "u8);

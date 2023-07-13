@@ -11,6 +11,8 @@ enum Command
     getvol,
     setvol,
     addid,
+    playlistinfo,
+    plchanges,
 
     command_list_begin,
     command_list_ok_begin,

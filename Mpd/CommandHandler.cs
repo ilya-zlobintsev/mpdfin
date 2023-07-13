@@ -27,6 +27,8 @@ class CommandHandler
             Command.getvol => GetVol(),
             Command.setvol => SetVol(int.Parse(request.Args[0])),
             Command.addid => AddId(request.Args[0]),
+            Command.playlistinfo => PlaylistInfo(),
+            Command.plchanges => PlChanges(int.Parse(request.Args[0])),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }
@@ -109,5 +111,31 @@ class CommandHandler
     {
         Player.MediaPlayer.Volume = vol;
         return new();
+    }
+
+    Response PlaylistInfo()
+    {
+        Response response = new();
+
+        foreach (var item in Player.Queue)
+        {
+            var itemResponse = item.GetResponse();
+            response.Extend(itemResponse);
+        }
+
+        return response;
+    }
+
+    Response PlChanges(int version)
+    {
+        // Naive implementation
+        if (version < Player.PlaylistVersion)
+        {
+            return PlaylistInfo();
+        }
+        else
+        {
+            return new();
+        }
     }
 }

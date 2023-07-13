@@ -78,6 +78,7 @@ static class Program
                 catch (Exception ex)
                 {
                     Log.Error(ex.ToString());
+                    await stream.WriteError(Ack.UNKNOWN);
                 }
             }
         }

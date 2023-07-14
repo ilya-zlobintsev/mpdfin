@@ -29,6 +29,19 @@ public readonly record struct Request
     public readonly Command Command;
     public readonly List<string> Args;
 
+    static Command ParseCommand(string rawCommand)
+    {
+
+        if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
+        {
+            return command;
+        }
+        else
+        {
+            throw new Exception($"unknown command {rawCommand}");
+        }
+    }
+
     public Request(string raw)
     {
         var chars = raw.ToCharArray();
@@ -42,21 +55,18 @@ public readonly record struct Request
             if (c == ' ')
             {
                 var rawCommand = rawCommandBuilder.ToString();
-
-                if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
-                {
-                    Command = command;
-                    break;
-                }
-                else
-                {
-                    throw new Exception($"unknown command {rawCommand}");
-                }
+                Command = ParseCommand(rawCommand);
+                break;
             }
             else
             {
                 rawCommandBuilder.Append(c);
             }
+        }
+
+        if (i == chars.Length)
+        {
+            Command = ParseCommand(rawCommandBuilder.ToString());
         }
 
         Args = new();

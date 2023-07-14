@@ -2,8 +2,17 @@ namespace Mpdfin.Tests;
 
 public class Parsing
 {
+
     [Fact]
     public void Basic()
+    {
+        Request request = new("status");
+        Assert.Equal(Command.status, request.Command);
+        Assert.True(request.Args.Count == 0);
+    }
+
+    [Fact]
+    public void Arguments()
     {
         Request request = new("playlistinfo 0 10");
         Assert.Equal(Command.playlistinfo, request.Command);

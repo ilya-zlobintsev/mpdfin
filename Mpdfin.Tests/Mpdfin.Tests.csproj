@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Mpdfin\mpdfin-net.csproj" />
+    <ProjectReference Include="..\Mpdfin\Mpdfin.csproj" />
   </ItemGroup>
 
 </Project>

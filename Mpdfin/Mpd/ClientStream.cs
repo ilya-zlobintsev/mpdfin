@@ -69,29 +69,19 @@ class ClientStream
                 yield break;
             }
 
-            var split = line.Split();
+            Request request;
 
-            if (split.Length != 0)
+            try
             {
-                var rawCommand = split[0];
-
-                // Make sure the command isn't a numeric representation of the enum
-                if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
-                {
-                    List<string> args = new();
-
-                    for (int i = 1; i < split.Length; i++)
-                    {
-                        args.Add(split[i]);
-                    }
-
-                    yield return new(command, args);
-                }
-                else
-                {
-                    await WriteError(Ack.UNKNOWN, messageText: $"unknown command {rawCommand}");
-                }
+                request = new(line);
             }
+            catch (Exception ex)
+            {
+                await WriteError(Ack.UNKNOWN, messageText: ex.Message);
+                continue;
+            }
+
+            yield return request;
         }
     }
 }

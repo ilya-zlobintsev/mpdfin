@@ -29,6 +29,7 @@ class CommandHandler
             Command.addid => AddId(request.Args[0]),
             Command.playlistinfo => PlaylistInfo(),
             Command.plchanges => PlChanges(int.Parse(request.Args[0])),
+            Command.tagtypes => TagTypes(),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }
@@ -137,5 +138,19 @@ class CommandHandler
         {
             return new();
         }
+    }
+
+    Response TagTypes()
+    {
+        Response response = new();
+
+        var tagTypes = Enum.GetValues<Tag>();
+
+        foreach (var tag in tagTypes)
+        {
+            response.Add("tagtype"u8, tag.ToString());
+        }
+
+        return response;
     }
 }

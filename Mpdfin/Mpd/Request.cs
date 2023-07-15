@@ -18,6 +18,7 @@ public enum Command
     playlistinfo,
     plchanges,
     find,
+    tagtypes,
 
     command_list_begin,
     command_list_ok_begin,

@@ -57,6 +57,6 @@ readonly record struct Response
 
     public override string ToString()
     {
-        return Encoding.UTF8.GetString(Contents.WrittenMemory.Span).Replace("\n", " ");
+        return Encoding.UTF8.GetString(Contents.WrittenMemory.Span).Replace("\n", "; ");
     }
 }

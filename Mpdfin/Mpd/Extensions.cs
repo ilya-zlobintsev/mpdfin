@@ -1,14 +1,9 @@
-using System.Text;
 using Mpdfin.Player;
 
 namespace Mpdfin.Mpd;
 
 static class Extensions
 {
-    public static string ToUtf16(this byte[] utf8) => Encoding.UTF8.GetString(utf8);
-    public static string ToUtf16(this Memory<byte> utf8) => Encoding.UTF8.GetString(utf8.Span);
-    public static string ToUtf16(this ReadOnlyMemory<byte> utf8) => Encoding.UTF8.GetString(utf8.Span);
-
     public static Response ToResponse(this Song song, int pos)
     {
         Response itemResponse = new();

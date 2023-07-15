@@ -31,7 +31,6 @@ public readonly record struct Request
 
     static Command ParseCommand(string rawCommand)
     {
-
         if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
         {
             return command;

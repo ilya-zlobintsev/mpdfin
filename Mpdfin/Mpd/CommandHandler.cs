@@ -77,7 +77,7 @@ class CommandHandler
     Response Play(int pos)
     {
         if (pos >= Player.Queue.Count)
-            throw new FileNotFoundException($"Invalid song index");
+            throw new FileNotFoundException("Invalid song index");
 
         Player.SetCurrent(pos);
 

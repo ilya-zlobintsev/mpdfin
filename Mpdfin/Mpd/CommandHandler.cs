@@ -39,8 +39,8 @@ class CommandHandler
     {
         Response response = new();
 
-        response.Add("volume"u8, Player.MediaPlayer.Volume.ToU8String());
-        response.Add("state"u8, Player.MediaPlayer.State switch
+        response.Add("volume"u8, Player.Volume.ToU8String());
+        response.Add("state"u8, Player.State switch
         {
             VLCState.Playing => "play"u8,
             VLCState.Paused => "pause"u8,
@@ -99,29 +99,24 @@ class CommandHandler
 
     Response Pause(string? state)
     {
-        switch (state)
+        bool? value = state switch
         {
-            case "0":
-                Player.MediaPlayer.SetPause(false);
-                break;
-            case "1":
-                Player.MediaPlayer.SetPause(true);
-                break;
-            case null:
-                Player.MediaPlayer.Pause();
-                break;
-        }
+            "0" => false,
+            "1" => true,
+            _ => null,
+        };
+        Player.SetPause(value);
         return new();
     }
 
     Response GetVol()
     {
-        return new("volume"u8, Player.MediaPlayer.Volume.ToString());
+        return new("volume"u8, Player.Volume.ToString());
     }
 
     Response SetVol(int vol)
     {
-        Player.MediaPlayer.Volume = vol;
+        Player.Volume = vol;
         return new();
     }
 
@@ -157,9 +152,7 @@ class CommandHandler
     {
         Response response = new();
 
-        var tagTypes = Enum.GetValues<Tag>();
-
-        foreach (var tag in tagTypes)
+        foreach (var tag in Enum.GetValues<Tag>())
         {
             response.Add("tagtype"u8, tag.ToString());
         }

@@ -18,6 +18,8 @@ public enum Command
     plchanges,
     find,
     tagtypes,
+    idle,
+    noidle,
 
     command_list_begin,
     command_list_ok_begin,
@@ -144,5 +146,10 @@ public readonly record struct Request
             var arg = currentArgBuilder.ToString();
             Args.Add(arg);
         }
+    }
+
+    public override string ToString()
+    {
+        return $"{Command} {string.Join(" ", Args)}";
     }
 }

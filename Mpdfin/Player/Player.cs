@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using Serilog;
@@ -6,15 +7,19 @@ namespace Mpdfin.Player;
 
 public class Player
 {
-    public readonly LibVLC libVLC;
-    public readonly MediaPlayer MediaPlayer;
+    readonly LibVLC libVLC;
+    readonly MediaPlayer MediaPlayer;
 
     public List<Song> Queue { get; }
     public int PlaylistVersion;
     int? CurrentItem;
 
-    public Player()
+    readonly ChannelWriter<Subsystem> EventWriter;
+
+    public Player(ChannelWriter<Subsystem> eventWriter)
     {
+        EventWriter = eventWriter;
+
         libVLC = new();
         MediaPlayer = new(libVLC);
 
@@ -32,12 +37,14 @@ public class Player
             Media media = new(libVLC, song.Uri);
             MediaPlayer.Play(media);
         }
+        EventWriter.TryWrite(Subsystem.player);
     }
 
     public void Stop()
     {
         MediaPlayer.Stop();
         CurrentItem = 0;
+        EventWriter.TryWrite(Subsystem.player);
     }
 
     /// <summary>
@@ -48,6 +55,7 @@ public class Player
         Song song = new(url, item);
         Queue.Add(song);
         PlaylistVersion++;
+        EventWriter.TryWrite(Subsystem.playlist);
         return song.Id;
     }
 
@@ -69,6 +77,41 @@ public class Player
         {
             Log.Debug("End of playlist reached");
             CurrentItem = null;
+            EventWriter.TryWrite(Subsystem.playlist);
         }
+    }
+
+    public int Volume
+    {
+        get
+        {
+            return MediaPlayer.Volume;
+        }
+        set
+        {
+            MediaPlayer.Volume = value;
+            EventWriter.TryWrite(Subsystem.mixer);
+        }
+    }
+
+    public VLCState State
+    {
+        get
+        {
+            return MediaPlayer.State;
+        }
+    }
+
+    public void SetPause(bool? pause)
+    {
+        if (pause is not null)
+        {
+            MediaPlayer.SetPause(pause.Value);
+        }
+        else
+        {
+            MediaPlayer.Pause();
+        }
+        EventWriter.TryWrite(Subsystem.player);
     }
 }

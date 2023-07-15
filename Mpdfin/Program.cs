@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using Mpdfin.Mpd;
 using Serilog;
 
@@ -26,13 +27,20 @@ static class Program
             return 1;
         }
 
+        var eventsChannel = Channel.CreateUnbounded<Subsystem>(new UnboundedChannelOptions
+        {
+            SingleWriter = false,
+            SingleReader = false,
+        });
+        _ = ReadSubsystemUpdates(eventsChannel.Reader);
+
         var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
         Log.Information($"Logged in as {auth.User.Name}");
 
-        Database db = new(config.Jellyfin.ServerUrl, auth);
+        Database db = new(config.Jellyfin.ServerUrl, auth, eventsChannel.Writer);
         _ = db.Update();
 
-        Player.Player player = new();
+        Player.Player player = new(eventsChannel.Writer);
         CommandHandler commandHandler = new(player, db);
 
         IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);
@@ -79,8 +87,8 @@ static class Program
             }
             catch (Exception ex)
             {
-                Log.Error(ex.ToString());
-                await stream.WriteError(Ack.UNKNOWN);
+                Log.Warning($"Error occured when processing request `{request}`: {ex}");
+                await stream.WriteError(Ack.UNKNOWN, messageText: ex.Message);
             }
         }
     }
@@ -125,5 +133,13 @@ static class Program
         }
 
         return totalResponse;
+    }
+
+    async static Task ReadSubsystemUpdates(ChannelReader<Subsystem> reader)
+    {
+        await foreach (var value in reader.ReadAllAsync())
+        {
+            Log.Debug($"Got update in subsystem {value}");
+        }
     }
 }

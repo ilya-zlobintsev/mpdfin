@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Jellyfin.Sdk;
 using Serilog;
 
@@ -11,6 +12,25 @@ class Database
     public List<BaseItemDto> Items = new();
     readonly UserDto CurrentUser;
     readonly SdkClientSettings Settings;
+
+    readonly ChannelWriter<Subsystem> EventWriter;
+
+    public Database(string serverUrl, AuthenticationResult authenticationResult, ChannelWriter<Subsystem> eventWriter)
+    {
+        EventWriter = eventWriter;
+
+        HttpClient httpClient = new();
+
+        var settings = ClientSettings();
+        settings.BaseUrl = serverUrl;
+        settings.AccessToken = authenticationResult.AccessToken;
+        Settings = settings;
+
+        CurrentUser = authenticationResult.User;
+
+        itemsClient = new(settings, httpClient);
+        userViewsClient = new(settings, httpClient);
+    }
 
     public static Task<AuthenticationResult> Authenticate(string serverUrl, string username, string password)
     {
@@ -36,24 +56,9 @@ class Database
         return settings;
     }
 
-    public Database(string serverUrl, AuthenticationResult authenticationResult)
-    {
-        HttpClient httpClient = new();
-
-        var settings = ClientSettings();
-        settings.BaseUrl = serverUrl;
-        settings.AccessToken = authenticationResult.AccessToken;
-        Settings = settings;
-
-        CurrentUser = authenticationResult.User;
-
-        itemsClient = new(settings, httpClient);
-        userViewsClient = new(settings, httpClient);
-    }
-
     public async Task Update()
     {
-        Log.Debug("Updating database");
+        EventWriter.TryWrite(Subsystem.update);
 
         var views = await userViewsClient.GetUserViewsAsync(CurrentUser.Id);
 
@@ -72,9 +77,12 @@ class Database
             Items = itemsResponse.Items.ToList();
 
             Log.Debug($"Loaded {Items.Count} items");
+            EventWriter.TryWrite(Subsystem.update);
+            EventWriter.TryWrite(Subsystem.database);
         }
         else
         {
+            EventWriter.TryWrite(Subsystem.database);
             throw new Exception("Server has no music library configured");
         }
 

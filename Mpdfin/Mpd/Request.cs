@@ -1,8 +1,6 @@
-using System.Globalization;
 using System.Text;
-using Serilog;
 
-namespace Mpdfin;
+namespace Mpdfin.Mpd;
 
 public enum Command
 {
@@ -10,6 +8,7 @@ public enum Command
 
     status,
     currentsong,
+    play,
     playid,
     pause,
     getvol,

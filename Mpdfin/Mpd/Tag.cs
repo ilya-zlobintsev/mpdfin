@@ -1,3 +1,5 @@
+namespace Mpdfin.Mpd;
+
 enum Tag
 {
     Artist,
@@ -27,7 +29,7 @@ enum Tag
     Comment,
     Disc,
     Label,
-    
+
     MUSICBRAINZ_ARTISTID,
     MUSICBRAINZ_ALBUMARTISTID,
     MUSICBRAINZ_RELEASETRACKID,

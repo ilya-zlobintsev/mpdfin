@@ -1,14 +1,14 @@
 using LibVLCSharp.Shared;
 using Serilog;
 
-namespace Mpdfin;
+namespace Mpdfin.Mpd;
 
 class CommandHandler
 {
-    public Player Player;
+    public Player.Player Player;
     public Database Db;
 
-    public CommandHandler(Player player, Database db)
+    public CommandHandler(Player.Player player, Database db)
     {
         Player = player;
         Db = db;
@@ -22,6 +22,7 @@ class CommandHandler
             Command.ping => new(),
             Command.status => Status(),
             Command.currentsong => CurrentSong(),
+            Command.play => Play(int.Parse(request.Args[0])),
             Command.playid => PlayId(request.Args[0]),
             Command.pause => Pause(request.Args.ElementAtOrDefault(0)),
             Command.getvol => GetVol(),
@@ -73,6 +74,16 @@ class CommandHandler
         }
     }
 
+    Response Play(int pos)
+    {
+        if (pos >= Player.Queue.Count)
+            throw new FileNotFoundException($"Invalid song index");
+
+        Player.SetCurrent(pos);
+
+        return new();
+    }
+
     Response PlayId(string id)
     {
         var guid = Guid.Parse(id);
@@ -118,10 +129,12 @@ class CommandHandler
     {
         Response response = new();
 
-        foreach (var item in Player.Queue)
+        int i = 0;
+        foreach (var song in Player.Queue)
         {
-            var itemResponse = item.GetResponse();
+            var itemResponse = song.ToResponse(i);
             response.Extend(itemResponse);
+            i++;
         }
 
         return response;
@@ -140,7 +153,7 @@ class CommandHandler
         }
     }
 
-    Response TagTypes()
+    static Response TagTypes()
     {
         Response response = new();
 

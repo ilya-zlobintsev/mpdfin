@@ -2,7 +2,7 @@ using System.Net.Sockets;
 using System.Text;
 using Serilog;
 
-namespace Mpdfin;
+namespace Mpdfin.Mpd;
 
 class ClientStream
 {

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using Mpdfin.Mpd;
 using Serilog;
 
 namespace Mpdfin;
@@ -31,7 +32,7 @@ static class Program
         Database db = new(config.Jellyfin.ServerUrl, auth);
         _ = db.Update();
 
-        Player player = new();
+        Player.Player player = new();
         CommandHandler commandHandler = new(player, db);
 
         IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);

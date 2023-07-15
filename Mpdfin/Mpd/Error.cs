@@ -1,4 +1,4 @@
-namespace Mpdfin;
+namespace Mpdfin.Mpd;
 
 enum Ack
 {

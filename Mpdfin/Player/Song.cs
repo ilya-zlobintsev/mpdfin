@@ -1,8 +1,8 @@
 using Jellyfin.Sdk;
 
-namespace Mpdfin;
+namespace Mpdfin.Player;
 
-readonly struct Song
+public readonly struct Song
 {
     public readonly Guid Id;
     public readonly Uri Uri;
@@ -13,25 +13,5 @@ readonly struct Song
         Uri = uri;
         Item = item;
         Id = Guid.NewGuid();
-    }
-
-    public Response GetResponse()
-    {
-        Response response = new();
-
-        response.Add("file"u8, Item.Id.ToString());
-        response.Add("Title"u8, Item.Name);
-
-        foreach (var artist in Item.Artists)
-        {
-            response.Add("Artist"u8, artist);
-        }
-
-        foreach (var albumArtist in Item.AlbumArtists)
-        {
-            response.Add("AlbumArtist"u8, albumArtist.Name);
-        }
-
-        return response;
     }
 }

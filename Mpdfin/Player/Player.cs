@@ -2,9 +2,9 @@ using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using Serilog;
 
-namespace Mpdfin;
+namespace Mpdfin.Player;
 
-class Player
+public class Player
 {
     public readonly LibVLC libVLC;
     public readonly MediaPlayer MediaPlayer;

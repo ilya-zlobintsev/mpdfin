@@ -27,11 +27,7 @@ static class Program
             return 1;
         }
 
-        var eventsChannel = Channel.CreateUnbounded<Subsystem>(new UnboundedChannelOptions
-        {
-            SingleWriter = false,
-            SingleReader = false,
-        });
+        var eventsChannel = Channel.CreateUnbounded<Subsystem>();
         _ = ReadSubsystemUpdates(eventsChannel.Reader);
 
         var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);

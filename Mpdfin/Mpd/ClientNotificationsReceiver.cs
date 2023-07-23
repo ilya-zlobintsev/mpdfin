@@ -28,7 +28,7 @@ readonly struct ClientNotificationsReceiver
     {
         Log.Debug($"Subscribing to events {subsystems}");
         List<Task<Subsystem>> tasks = new();
-        CancellationTokenSource source = new();
+        using CancellationTokenSource source = new();
 
         foreach (var subsystem in subsystems)
         {
@@ -40,6 +40,6 @@ readonly struct ClientNotificationsReceiver
         var finishedTask = await Task.WhenAny(tasks);
         source.Cancel();
 
-        return await finishedTask;
+        return finishedTask.Result;
     }
 }

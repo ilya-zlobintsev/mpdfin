@@ -1,7 +1,5 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using System.Reflection.PortableExecutable;
-using System.Threading.Channels;
 using Mpdfin.Mpd;
 using Serilog;
 
@@ -59,9 +57,6 @@ static class Program
 
     async static Task HandleStream(TcpClient client, Player.Player player, Database db)
     {
-        // For some reason `await foreach` doesn't yield back
-        await Task.Yield();
-
         CommandHandler commandHandler = new(player, db);
 
         await using ClientStream stream = new(client);
@@ -76,6 +71,8 @@ static class Program
         {
             try
             {
+                // Commands which take over the flow of incoming commands are handled here
+                // "Normal" commands are handled in CommandHandler
                 var response = request.Command switch
                 {
                     Command.command_list_begin => await HandleCommandList(requests, commandHandler, false),
@@ -137,11 +134,19 @@ static class Program
 
     async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler)
     {
-        var subsystem = await handler.NotificationsReceiver.WaitForEvent(Enum.GetValues<Subsystem>());
-        return new Response("changed"u8, Enum.GetName(subsystem)!);
-        // await foreach (var request in incomingRequests)
-        // {
-        //     if (request.Command == Command.noidle)
-        // }
+        using CancellationTokenSource source = new();
+
+        var notificationTask = handler.NotificationsReceiver.WaitForEvent(Enum.GetValues<Subsystem>());
+        var incomingCommandTask = incomingRequests.FirstAsync(source.Token).AsTask();
+
+        var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
+        if (finishedTask is Task<Subsystem> task)
+        {
+            return new Response("changed"u8, Enum.GetName(task.Result)!);
+        }
+        else
+        {
+            return new();
+        }
     }
 }

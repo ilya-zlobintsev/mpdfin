@@ -60,7 +60,7 @@ class ClientStream
 
     public async IAsyncEnumerable<Request> ReadCommands()
     {
-        while (!Reader.EndOfStream)
+        while (true)
         {
             var line = await Reader.ReadLineAsync();
 

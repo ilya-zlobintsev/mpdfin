@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using Jellyfin.Sdk;
+using MemoryPack;
 using Serilog;
 
 namespace Mpdfin;
@@ -51,7 +52,7 @@ class Database
     static SdkClientSettings ClientSettings()
     {
         SdkClientSettings settings = new();
-        settings.InitializeClientSettings("dotnet test", "0.0.1", "desktop", "1");
+        settings.InitializeClientSettings("dotnet test", "0.0.1", System.Environment.MachineName, "1");
         return settings;
     }
 

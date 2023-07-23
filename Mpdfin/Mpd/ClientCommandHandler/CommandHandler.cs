@@ -1,17 +1,22 @@
-using LibVLCSharp.Shared;
 using Serilog;
 
 namespace Mpdfin.Mpd;
 
-class CommandHandler
+partial class ClientCommandHandler
 {
-    public Player.Player Player;
-    public Database Db;
+    readonly Player.Player Player;
+    readonly Database Db;
+    public readonly ClientNotificationsReceiver NotificationsReceiver;
 
-    public CommandHandler(Player.Player player, Database db)
+    public ClientCommandHandler(Player.Player player, Database db)
     {
         Player = player;
         Db = db;
+        NotificationsReceiver = new();
+
+        Player.OnSubsystemUpdate += (e, args) => NotificationsReceiver.SendEvent(args.Subsystem);
+        Db.OnUpdate += (e, args) => NotificationsReceiver.SendEvent(Subsystem.update);
+        Db.OnDatabaseUpdated += (e, args) => NotificationsReceiver.SendEvent(Subsystem.update);
     }
 
     public Response HandleRequest(Request request)
@@ -35,27 +40,6 @@ class CommandHandler
         };
     }
 
-    Response Status()
-    {
-        Response response = new();
-
-        response.Add("volume"u8, Player.Volume.ToU8String());
-        response.Add("state"u8, Player.State switch
-        {
-            VLCState.Playing => "play"u8,
-            VLCState.Paused => "pause"u8,
-            _ => "stop"u8,
-        });
-        response.Add("playlist"u8, Player.PlaylistVersion.ToU8String());
-        response.Add("playlistlength"u8, Player.Queue.Count.ToU8String());
-
-        return response;
-    }
-
-    static Response CurrentSong()
-    {
-        return new();
-    }
 
     Response AddId(string id)
     {

@@ -13,12 +13,11 @@ class Database
     readonly UserDto CurrentUser;
     readonly SdkClientSettings Settings;
 
-    readonly ChannelWriter<Subsystem> EventWriter;
+    public event EventHandler? OnDatabaseUpdated;
+    public event EventHandler? OnUpdate;
 
-    public Database(string serverUrl, AuthenticationResult authenticationResult, ChannelWriter<Subsystem> eventWriter)
+    public Database(string serverUrl, AuthenticationResult authenticationResult)
     {
-        EventWriter = eventWriter;
-
         HttpClient httpClient = new();
 
         var settings = ClientSettings();
@@ -58,7 +57,10 @@ class Database
 
     public async Task Update()
     {
-        EventWriter.TryWrite(Subsystem.update);
+        if (OnUpdate is not null)
+        {
+            OnUpdate(this, new());
+        }
 
         var views = await userViewsClient.GetUserViewsAsync(CurrentUser.Id);
 
@@ -77,12 +79,22 @@ class Database
             Items = itemsResponse.Items.ToList();
 
             Log.Debug($"Loaded {Items.Count} items");
-            EventWriter.TryWrite(Subsystem.update);
-            EventWriter.TryWrite(Subsystem.database);
+
+            if (OnUpdate is not null)
+            {
+                OnUpdate(this, new());
+            }
+            if (OnDatabaseUpdated is not null)
+            {
+                OnDatabaseUpdated(this, new());
+            }
         }
         else
         {
-            EventWriter.TryWrite(Subsystem.database);
+            if (OnDatabaseUpdated is not null)
+            {
+                OnDatabaseUpdated(this, new());
+            }
             throw new Exception("Server has no music library configured");
         }
 

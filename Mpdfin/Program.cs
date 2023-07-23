@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Reflection.PortableExecutable;
 using System.Threading.Channels;
 using Mpdfin.Mpd;
 using Serilog;
@@ -27,17 +28,14 @@ static class Program
             return 1;
         }
 
-        var eventsChannel = Channel.CreateUnbounded<Subsystem>();
-        _ = ReadSubsystemUpdates(eventsChannel.Reader);
-
         var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
         Log.Information($"Logged in as {auth.User.Name}");
 
-        Database db = new(config.Jellyfin.ServerUrl, auth, eventsChannel.Writer);
+        Database db = new(config.Jellyfin.ServerUrl, auth);
         _ = db.Update();
 
-        Player.Player player = new(eventsChannel.Writer);
-        CommandHandler commandHandler = new(player, db);
+        Player.Player player = new();
+        // CommandHandler commandHandler = new(player, db);
 
         IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);
         TcpListener listener = new(ipEndPoint);
@@ -50,7 +48,7 @@ static class Program
             {
                 Log.Debug("Waiting for new connection");
                 TcpClient handler = await listener.AcceptTcpClientAsync();
-                _ = HandleStream(handler, commandHandler);
+                _ = HandleStream(handler, player, db);
             }
         }
         finally
@@ -59,13 +57,18 @@ static class Program
         }
     }
 
-    async static Task HandleStream(TcpClient client, CommandHandler commandHandler)
+    async static Task HandleStream(TcpClient client, Player.Player player, Database db)
     {
         // For some reason `await foreach` doesn't yield back
         await Task.Yield();
 
+        ClientCommandHandler commandHandler = new(player, db);
+
         await using ClientStream stream = new(client);
         await stream.WriteGreeting();
+
+        // var notif = await notificationsReceiver.WaitForEvent(new[] { Subsystem.update, Subsystem.database });
+        // Log.Debug($"Got client notification {notif}");
 
         var requests = stream.ReadCommands();
 
@@ -77,6 +80,7 @@ static class Program
                 {
                     Command.command_list_begin => await HandleCommandList(requests, commandHandler, false),
                     Command.command_list_ok_begin => await HandleCommandList(requests, commandHandler, true),
+                    Command.idle => await Idle(requests, commandHandler),
                     _ => commandHandler.HandleRequest(request),
                 };
                 await stream.WriteResponse(response);
@@ -89,7 +93,7 @@ static class Program
         }
     }
 
-    async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler, bool printOk)
+    async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, ClientCommandHandler handler, bool printOk)
     {
         List<Request> requestList = new();
 
@@ -131,11 +135,13 @@ static class Program
         return totalResponse;
     }
 
-    async static Task ReadSubsystemUpdates(ChannelReader<Subsystem> reader)
+    async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, ClientCommandHandler handler)
     {
-        await foreach (var value in reader.ReadAllAsync())
-        {
-            Log.Debug($"Got update in subsystem {value}");
-        }
+        var subsystem = await handler.NotificationsReceiver.WaitForEvent(Enum.GetValues<Subsystem>());
+        return new Response("changed"u8, Enum.GetName(subsystem)!);
+        // await foreach (var request in incomingRequests)
+        // {
+        //     if (request.Command == Command.noidle)
+        // }
     }
 }

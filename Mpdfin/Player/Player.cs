@@ -14,12 +14,10 @@ public class Player
     public int PlaylistVersion;
     int? CurrentItem;
 
-    readonly ChannelWriter<Subsystem> EventWriter;
+    public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
 
-    public Player(ChannelWriter<Subsystem> eventWriter)
+    public Player()
     {
-        EventWriter = eventWriter;
-
         libVLC = new();
         MediaPlayer = new(libVLC);
 
@@ -27,6 +25,20 @@ public class Player
         PlaylistVersion = 0;
 
         MediaPlayer.EndReached += (_, _) => NextSong();
+    }
+
+    void RaiseEvent(Subsystem subsystem)
+    {
+        Log.Debug($"Raising event `{subsystem}`");
+        if (OnSubsystemUpdate is not null)
+        {
+            SubsystemEventArgs args = new(subsystem);
+            OnSubsystemUpdate(this, args);
+        }
+        else
+        {
+            Log.Debug("No event subscribers");
+        }
     }
 
     public void PlayCurrent()
@@ -37,14 +49,14 @@ public class Player
             Media media = new(libVLC, song.Uri);
             MediaPlayer.Play(media);
         }
-        EventWriter.TryWrite(Subsystem.player);
+        RaiseEvent(Subsystem.player);
     }
 
     public void Stop()
     {
         MediaPlayer.Stop();
         CurrentItem = 0;
-        EventWriter.TryWrite(Subsystem.player);
+        RaiseEvent(Subsystem.player);
     }
 
     /// <summary>
@@ -55,7 +67,7 @@ public class Player
         Song song = new(url, item);
         Queue.Add(song);
         PlaylistVersion++;
-        EventWriter.TryWrite(Subsystem.playlist);
+        RaiseEvent(Subsystem.playlist);
         return song.Id;
     }
 
@@ -77,7 +89,7 @@ public class Player
         {
             Log.Debug("End of playlist reached");
             CurrentItem = null;
-            EventWriter.TryWrite(Subsystem.playlist);
+            RaiseEvent(Subsystem.playlist);
         }
     }
 
@@ -90,17 +102,11 @@ public class Player
         set
         {
             MediaPlayer.Volume = value;
-            EventWriter.TryWrite(Subsystem.mixer);
+            RaiseEvent(Subsystem.mixer);
         }
     }
 
-    public VLCState State
-    {
-        get
-        {
-            return MediaPlayer.State;
-        }
-    }
+    public VLCState State => MediaPlayer.State;
 
     public void SetPause(bool? pause)
     {
@@ -112,6 +118,6 @@ public class Player
         {
             MediaPlayer.Pause();
         }
-        EventWriter.TryWrite(Subsystem.player);
+        RaiseEvent(Subsystem.player);
     }
 }

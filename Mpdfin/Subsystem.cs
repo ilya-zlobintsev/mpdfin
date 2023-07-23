@@ -17,3 +17,13 @@ public enum Subsystem
     neighbor,
     mount,
 }
+
+public class SubsystemEventArgs : EventArgs
+{
+    public readonly Subsystem Subsystem;
+
+    public SubsystemEventArgs(Subsystem subsystem)
+    {
+        Subsystem = subsystem;
+    }
+}

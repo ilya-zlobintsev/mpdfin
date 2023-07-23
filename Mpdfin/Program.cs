@@ -77,7 +77,7 @@ static class Program
                 {
                     Command.command_list_begin => await HandleCommandList(requests, commandHandler, false),
                     Command.command_list_ok_begin => await HandleCommandList(requests, commandHandler, true),
-                    Command.idle => await Idle(requests, commandHandler),
+                    Command.idle => await Idle(requests, commandHandler, request.Args),
                     _ => commandHandler.HandleRequest(request),
                 };
                 await stream.WriteResponse(response);
@@ -132,11 +132,22 @@ static class Program
         return totalResponse;
     }
 
-    async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler)
+    async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler, List<string> args)
     {
         using CancellationTokenSource source = new();
 
-        var notificationTask = handler.NotificationsReceiver.WaitForEvent(Enum.GetValues<Subsystem>());
+        Subsystem[] subsystems;
+
+        if (args.Count == 0)
+        {
+            subsystems = Enum.GetValues<Subsystem>();
+        }
+        else
+        {
+            subsystems = args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray();
+        }
+
+        var notificationTask = handler.NotificationsReceiver.WaitForEvent(subsystems);
         var incomingCommandTask = incomingRequests.FirstAsync(source.Token).AsTask();
 
         var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);

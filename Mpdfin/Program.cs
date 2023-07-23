@@ -62,7 +62,7 @@ static class Program
         // For some reason `await foreach` doesn't yield back
         await Task.Yield();
 
-        ClientCommandHandler commandHandler = new(player, db);
+        CommandHandler commandHandler = new(player, db);
 
         await using ClientStream stream = new(client);
         await stream.WriteGreeting();
@@ -93,7 +93,7 @@ static class Program
         }
     }
 
-    async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, ClientCommandHandler handler, bool printOk)
+    async static Task<Response> HandleCommandList(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler, bool printOk)
     {
         List<Request> requestList = new();
 
@@ -135,7 +135,7 @@ static class Program
         return totalResponse;
     }
 
-    async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, ClientCommandHandler handler)
+    async static Task<Response> Idle(IAsyncEnumerable<Request> incomingRequests, CommandHandler handler)
     {
         var subsystem = await handler.NotificationsReceiver.WaitForEvent(Enum.GetValues<Subsystem>());
         return new Response("changed"u8, Enum.GetName(subsystem)!);

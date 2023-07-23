@@ -2,7 +2,7 @@ using LibVLCSharp.Shared;
 
 namespace Mpdfin.Mpd;
 
-partial class ClientCommandHandler
+partial class CommandHandler
 {
     Response Status()
     {

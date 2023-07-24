@@ -36,7 +36,7 @@ partial class CommandHandler
             Command.plchanges => PlChanges(int.Parse(request.Args[0])),
             Command.tagtypes => TagTypes(),
             Command.list => List(Enum.Parse<Tag>(request.Args[0])),
-            Command.find => Find(Enum.Parse<Tag>(request.Args[0]), request.Args[1]),
+            Command.find => Find(Filter.ParseFilters(request.Args)),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }

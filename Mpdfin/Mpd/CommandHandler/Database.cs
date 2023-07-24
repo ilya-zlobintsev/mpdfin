@@ -19,16 +19,16 @@ partial class CommandHandler
         return response;
     }
 
-    Response Find(Tag tag, string value)
+    Response Find(List<Filter> filters)
     {
-        if (Cached<Response>.TryGet(Command.find, tag, value, out var cached))
+        if (Cached<Response>.TryGet(Command.find, filters, out var cached))
         {
             return cached;
         }
 
         Response response = new();
 
-        Db.Items.FindAll(item => item.GetTagValue(tag)!.Any(tagValue => tagValue == value)).ForEach(item =>
+        Db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).ForEach(item =>
         {
             var itemResponse = item.GetResponse();
             response.Extend(itemResponse);

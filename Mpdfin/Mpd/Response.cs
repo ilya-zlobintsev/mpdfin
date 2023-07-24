@@ -60,7 +60,6 @@ readonly record struct Response
 
     public void Extend(Response other)
     {
-        Log.Debug($"Combining with other response {other}");
         Contents.Write(other.Contents.WrittenSpan);
     }
 

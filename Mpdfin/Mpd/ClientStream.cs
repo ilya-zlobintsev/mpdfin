@@ -6,7 +6,7 @@ namespace Mpdfin.Mpd;
 
 class ClientStream
 {
-    readonly static ReadOnlyMemory<byte> GREETING = "OK MPD 0.23.5"u8.ToArray();
+    readonly static ReadOnlyMemory<byte> GREETING = "OK MPD 0.19.0"u8.ToArray();
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
     readonly StreamReader Reader;
@@ -68,6 +68,8 @@ class ClientStream
             {
                 yield break;
             }
+
+            Log.Debug($"Read client line {line}");
 
             Request request;
 

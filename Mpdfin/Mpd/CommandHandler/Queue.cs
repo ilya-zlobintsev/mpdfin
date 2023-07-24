@@ -26,7 +26,7 @@ partial class CommandHandler
         int i = 0;
         foreach (var song in Player.Queue)
         {
-            var itemResponse = song.ToResponse(i);
+            var itemResponse = song.GetResponse(i);
             response.Extend(itemResponse);
             i++;
         }

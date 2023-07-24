@@ -26,9 +26,23 @@ readonly record struct Response
         Add(key, value);
     }
 
-    public void Add(ReadOnlySpan<byte> key, string value)
+    public void Add(ReadOnlySpan<byte> key, string? value)
     {
-        Add(key, value.ToU8String());
+        if (value is not null)
+        {
+            Add(key, value.ToU8String());
+        }
+    }
+
+    public void Add(ReadOnlySpan<byte> key, IReadOnlyList<string>? values)
+    {
+        if (values is not null)
+        {
+            foreach (var value in values)
+            {
+                Add(key, value.ToU8String());
+            }
+        }
     }
 
     public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)

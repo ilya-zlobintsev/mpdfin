@@ -1,31 +1,54 @@
+using Jellyfin.Sdk;
+using LibVLCSharp.Shared;
 using Mpdfin.Player;
 
 namespace Mpdfin.Mpd;
 
 static class Extensions
 {
-    public static Response ToResponse(this Song song, int pos)
+    public static Response GetResponse(this Song song, int? pos)
     {
-        Response itemResponse = new();
+        var response = song.Item.GetResponse();
 
-        var item = song.Item;
+        if (pos is not null)
+            response.Add("Pos"u8, pos.Value.ToU8String());
 
-        itemResponse.Add("file"u8, item.Id.ToU8String());
-        itemResponse.Add("Title"u8, item.Name);
+        response.Add("Id"u8, song.Id.ToU8String());
 
-        foreach (var artist in item.Artists)
-        {
-            itemResponse.Add("Artist"u8, artist);
-        }
-
-        foreach (var albumArtist in item.AlbumArtists)
-        {
-            itemResponse.Add("AlbumArtist"u8, albumArtist.Name);
-        }
-
-        itemResponse.Add("Pos"u8, pos.ToU8String());
-        itemResponse.Add("Id"u8, song.Id.ToU8String());
-
-        return itemResponse;
+        return response;
     }
+
+    public static Response GetResponse(this BaseItemDto item)
+    {
+        Response response = new();
+
+        response.Add("file"u8, item.Id.ToU8String());
+
+        foreach (var tag in Enum.GetValues<Tag>())
+        {
+            var key = Enum.GetName(tag)!.ToU8String();
+            var value = item.GetTagValue(tag);
+            response.Add(key, value);
+        }
+
+        return response;
+    }
+
+    public static string[] ToSingleItemArray(this string value)
+    {
+        return new string[1] { value };
+    }
+
+    // public static bool ParseEnum<TEnum>(string value, out TEnum result) where TEnum : struct
+    // {
+    //     if (!int.TryParse(value, out int _) && Enum.TryParse(value, false, out TEnum parsed))
+    //     {
+    //         result = parsed;
+    //         return true;
+    //     }
+    //     else
+    //     {
+    //         return false;
+    //     }
+    // }
 }

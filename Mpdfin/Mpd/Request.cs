@@ -20,6 +20,7 @@ public enum Command
     tagtypes,
     idle,
     noidle,
+    list,
 
     command_list_begin,
     command_list_ok_begin,

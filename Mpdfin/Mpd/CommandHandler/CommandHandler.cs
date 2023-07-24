@@ -21,7 +21,6 @@ partial class CommandHandler
 
     public Response HandleRequest(Request request)
     {
-        Log.Debug($"Handling command {request.Command}");
         return request.Command switch
         {
             Command.ping => new(),
@@ -36,6 +35,8 @@ partial class CommandHandler
             Command.playlistinfo => PlaylistInfo(),
             Command.plchanges => PlChanges(int.Parse(request.Args[0])),
             Command.tagtypes => TagTypes(),
+            Command.list => List(Enum.Parse<Tag>(request.Args[0])),
+            Command.find => Find(Enum.Parse<Tag>(request.Args[0]), request.Args[1]),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }

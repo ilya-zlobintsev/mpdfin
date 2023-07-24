@@ -1,3 +1,5 @@
+using Jellyfin.Sdk;
+
 namespace Mpdfin.Mpd;
 
 enum Tag
@@ -34,4 +36,21 @@ enum Tag
     MUSICBRAINZ_ALBUMARTISTID,
     MUSICBRAINZ_RELEASETRACKID,
     MUSICBRAINZ_WORKID,
+}
+
+static class TagExtractor
+{
+    public static string[]? GetTagValue(this BaseItemDto item, Tag tag)
+    {
+        return tag switch
+        {
+            Tag.Title => item.Name?.ToSingleItemArray(),
+            Tag.Album => item.Album?.ToSingleItemArray(),
+            Tag.Artist => item.Artists?.ToArray(),
+            Tag.AlbumArtist => item.AlbumArtist?.ToSingleItemArray(),
+            Tag.Genre => item.Genres?.ToArray(),
+            Tag.Date => item.ProductionYear?.ToString().ToSingleItemArray(),
+            _ => null,
+        };
+    }
 }

@@ -4,14 +4,14 @@ namespace Mpdfin.Player;
 
 public readonly struct Song
 {
-    public readonly Guid Id;
+    public readonly int Id;
     public readonly Uri Uri;
     public readonly BaseItemDto Item;
 
-    public Song(Uri uri, BaseItemDto item)
+    public Song(Uri uri, BaseItemDto item, int id)
     {
         Uri = uri;
         Item = item;
-        Id = Guid.NewGuid();
+        Id = id;
     }
 }

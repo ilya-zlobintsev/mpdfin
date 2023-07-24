@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using Serilog;
@@ -11,8 +10,41 @@ public class Player
     readonly MediaPlayer MediaPlayer;
 
     public List<Song> Queue { get; }
+    int nextSongId;
     public int PlaylistVersion;
-    int? CurrentItem;
+
+    int? _currentPos;
+    public int? CurrentPos => _currentPos;
+    public Song? CurrentSong
+    {
+        get
+        {
+            if (_currentPos is not null)
+            {
+                return Queue[_currentPos.Value];
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
+
+    public int Volume
+    {
+        get
+        {
+            return MediaPlayer.Volume;
+        }
+        set
+        {
+            MediaPlayer.Volume = value;
+            RaiseEvent(Subsystem.mixer);
+        }
+    }
+
+    public float Duration => MediaPlayer.Length / 1000;
+    public float Elapsed => MediaPlayer.Length / 1000 * MediaPlayer.Position;
 
     public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
 
@@ -23,6 +55,7 @@ public class Player
 
         Queue = new();
         PlaylistVersion = 0;
+        nextSongId = 0;
 
         MediaPlayer.EndReached += (_, _) => NextSong();
     }
@@ -43,9 +76,9 @@ public class Player
 
     public void PlayCurrent()
     {
-        if (CurrentItem < Queue.Count)
+        if (CurrentPos < Queue.Count)
         {
-            var song = Queue[CurrentItem.Value];
+            var song = Queue[CurrentPos.Value];
             Media media = new(libVLC, song.Uri);
             MediaPlayer.Play(media);
         }
@@ -55,54 +88,42 @@ public class Player
     public void Stop()
     {
         MediaPlayer.Stop();
-        CurrentItem = 0;
+        _currentPos = 0;
         RaiseEvent(Subsystem.player);
     }
 
     /// <summary>
     /// Adds a song to queue an returns the id
     /// </summary>
-    public Guid Add(Uri url, BaseItemDto item)
+    public int Add(Uri url, BaseItemDto item)
     {
-        Song song = new(url, item);
+        Song song = new(url, item, nextSongId);
         Queue.Add(song);
         PlaylistVersion++;
+        nextSongId++;
         RaiseEvent(Subsystem.playlist);
         return song.Id;
     }
 
     public void SetCurrent(int newPosition)
     {
-        CurrentItem = newPosition;
+        _currentPos = newPosition;
         PlayCurrent();
     }
 
     public void NextSong()
     {
-        if (CurrentItem < Queue.Count - 1)
+        if (CurrentPos < Queue.Count - 1)
         {
             Log.Debug("Switching to next item");
-            CurrentItem += 1;
+            _currentPos += 1;
             PlayCurrent();
         }
         else
         {
             Log.Debug("End of playlist reached");
-            CurrentItem = null;
+            _currentPos = null;
             RaiseEvent(Subsystem.playlist);
-        }
-    }
-
-    public int Volume
-    {
-        get
-        {
-            return MediaPlayer.Volume;
-        }
-        set
-        {
-            MediaPlayer.Volume = value;
-            RaiseEvent(Subsystem.mixer);
         }
     }
 

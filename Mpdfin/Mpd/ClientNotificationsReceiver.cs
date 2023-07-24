@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using Jellyfin.Sdk;
 using Serilog;
 
 namespace Mpdfin.Mpd;
@@ -13,7 +14,11 @@ readonly struct ClientNotificationsReceiver
 
         foreach (var subsystem in Enum.GetValues<Subsystem>())
         {
-            var subsystemChannel = Channel.CreateUnbounded<Subsystem>();
+            var subsystemChannel = Channel.CreateBounded<Subsystem>(new BoundedChannelOptions(1)
+            {
+                SingleReader = true,
+                FullMode = BoundedChannelFullMode.DropOldest,
+            });
             Listeners.Add(subsystem, subsystemChannel);
         }
     }
@@ -21,7 +26,10 @@ readonly struct ClientNotificationsReceiver
     public void SendEvent(Subsystem subsystem)
     {
         Log.Debug($"Got event `{subsystem}` on client");
-        Listeners[subsystem].Writer.TryWrite(subsystem);
+        if (!Listeners[subsystem].Writer.TryWrite(subsystem))
+        {
+            Log.Debug("Notifications channel full, discarding event");
+        }
     }
 
     public async Task<Subsystem> WaitForEvent(Subsystem[] subsystems)

@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Serilog;
 
@@ -10,6 +11,7 @@ class ClientStream
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
     readonly StreamReader Reader;
+    public bool EndOfStream { get; private set; }
 
     public ClientStream(TcpClient client)
     {
@@ -58,14 +60,16 @@ class ClientStream
         TcpClient.Dispose();
     }
 
-    public async IAsyncEnumerable<Request> ReadCommands()
+    public async IAsyncEnumerable<Request> ReadCommands([EnumeratorCancellation] CancellationToken ct = default)
     {
         while (true)
         {
-            var line = await Reader.ReadLineAsync();
+            var line = await Reader.ReadLineAsync(ct);
 
             if (string.IsNullOrEmpty(line))
             {
+                Log.Debug("Got EOF, closing client stream");
+                EndOfStream = true;
                 yield break;
             }
 

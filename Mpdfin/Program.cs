@@ -62,9 +62,6 @@ static class Program
         await using ClientStream stream = new(client);
         await stream.WriteGreeting();
 
-        // var notif = await notificationsReceiver.WaitForEvent(new[] { Subsystem.update, Subsystem.database });
-        // Log.Debug($"Got client notification {notif}");
-
         var requests = stream.ReadCommands();
 
         await foreach (var request in requests)
@@ -80,7 +77,10 @@ static class Program
                     Command.idle => await Idle(requests, commandHandler, request.Args),
                     _ => commandHandler.HandleRequest(request),
                 };
-                await stream.WriteResponse(response);
+                if (!stream.EndOfStream)
+                {
+                    await stream.WriteResponse(response);
+                }
             }
             catch (Exception ex)
             {
@@ -153,6 +153,7 @@ static class Program
         var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
         if (finishedTask is Task<Subsystem> task)
         {
+            await source.CancelAsync();
             return new Response("changed"u8, Enum.GetName(task.Result)!);
         }
         else

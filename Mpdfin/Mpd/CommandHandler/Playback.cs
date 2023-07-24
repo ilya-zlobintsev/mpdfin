@@ -14,8 +14,8 @@ partial class CommandHandler
 
     Response PlayId(string id)
     {
-        var guid = Guid.Parse(id);
-        var index = Player.Queue.FindIndex(song => song.Id == guid);
+        var intId = int.Parse(id);
+        var index = Player.Queue.FindIndex(song => song.Id == intId);
 
         if (index == -1)
             throw new FileNotFoundException($"Song with id {id} not found in the database");

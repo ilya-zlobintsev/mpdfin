@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using LibVLCSharp.Shared;
 using Microsoft.VisualBasic;
 
@@ -50,26 +51,20 @@ partial class CommandHandler
 
     async Task<Response> Idle(ClientStream stream, List<string> args)
     {
+        var subsystems = args.Count > 0
+            ? args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray()
+            : null;
+
         using CancellationTokenSource source = new();
 
-        Subsystem[] subsystems;
-
-        if (args.Count == 0)
-        {
-            subsystems = Enum.GetValues<Subsystem>();
-        }
-        else
-        {
-            subsystems = args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray();
-        }
-
-        var notificationTask = NotificationsReceiver.WaitForEvent(subsystems);
+        var notificationTask = NotificationsReceiver.WaitForEvent(subsystems, source.Token);
         var incomingCommandTask = stream.ReadRequest(source.Token);
 
         var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
+        source.Cancel();
+
         if (finishedTask == notificationTask)
         {
-            await source.CancelAsync();
             Response response = new();
 
             foreach (var subsystem in notificationTask.Result)
@@ -79,9 +74,21 @@ partial class CommandHandler
 
             return response;
         }
+        else if (finishedTask == incomingCommandTask)
+        {
+            var request = incomingCommandTask.Result!.Value;
+            if (request.Command == Command.noidle)
+            {
+                return new();
+            }
+            else
+            {
+                throw new Exception("Only `noidle` can be called when idling");
+            }
+        }
         else
         {
-            return new();
+            throw new UnreachableException();
         }
     }
 }

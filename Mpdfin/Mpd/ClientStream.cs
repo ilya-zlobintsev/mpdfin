@@ -11,6 +11,7 @@ class ClientStream
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
     readonly StreamReader Reader;
+    readonly SemaphoreSlim Lock;
     public bool EndOfStream { get; private set; }
 
     public ClientStream(TcpClient client)
@@ -19,19 +20,7 @@ class ClientStream
         TcpClient = client;
         Stream = client.GetStream();
         Reader = new(Stream, Encoding.UTF8);
-    }
-
-    public async Task Write(ReadOnlyMemory<byte> data)
-    {
-        if (data.Length > 0)
-        {
-            await Stream.WriteAsync(data);
-
-            if (data.Span[^1] is not (byte)'\n')
-            {
-                Stream.WriteByte((byte)'\n');
-            }
-        }
+        Lock = new(1, 1);
     }
 
     public Task WriteGreeting()
@@ -67,7 +56,11 @@ class ClientStream
     {
         while (true)
         {
-            var line = await Reader.ReadLineAsync(ct);
+            string? line = null;
+            using (await Lock.LockAsync())
+            {
+                line = await Reader.ReadLineAsync(ct);
+            }
 
             if (string.IsNullOrEmpty(line))
             {
@@ -85,6 +78,20 @@ class ClientStream
             catch (Exception ex)
             {
                 await WriteError(Ack.UNKNOWN, messageText: ex.Message);
+            }
+        }
+    }
+
+    async Task Write(ReadOnlyMemory<byte> data)
+    {
+        using var streamLock = await Lock.LockAsync();
+        if (data.Length > 0)
+        {
+            await Stream.WriteAsync(data);
+
+            if (data.Span[^1] is not (byte)'\n')
+            {
+                Stream.WriteByte((byte)'\n');
             }
         }
     }

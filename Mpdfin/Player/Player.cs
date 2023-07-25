@@ -83,6 +83,7 @@ public class Player
             MediaPlayer.Play(media);
         }
         RaiseEvent(Subsystem.player);
+        RaiseEvent(Subsystem.mixer);
     }
 
     public void Stop()

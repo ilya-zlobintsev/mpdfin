@@ -1,11 +1,24 @@
 using Jellyfin.Sdk;
-using LibVLCSharp.Shared;
 using Mpdfin.Player;
+using Serilog;
 
 namespace Mpdfin.Mpd;
 
 static class Extensions
 {
+    public readonly struct AsyncLock : IDisposable
+    {
+        public required SemaphoreSlim Lock { get; init; }
+
+        public void Dispose() => Lock.Release();
+    }
+
+    public static async ValueTask<AsyncLock> LockAsync(this SemaphoreSlim semaphore)
+    {
+        await semaphore.WaitAsync();
+        return new AsyncLock { Lock = semaphore };
+    }
+
     public static Response GetResponse(this Song song, int? pos)
     {
         var response = song.Item.GetResponse();

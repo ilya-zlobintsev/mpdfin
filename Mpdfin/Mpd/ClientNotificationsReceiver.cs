@@ -6,6 +6,8 @@ namespace Mpdfin.Mpd;
 
 readonly struct ClientNotificationsReceiver
 {
+    static readonly Subsystem[] AllSubsystems = Enum.GetValues<Subsystem>();
+
     readonly Dictionary<Subsystem, Channel<Subsystem>> Listeners;
 
     public ClientNotificationsReceiver()
@@ -25,45 +27,45 @@ readonly struct ClientNotificationsReceiver
 
     public void SendEvent(Subsystem subsystem)
     {
-        Log.Debug($"Got event `{subsystem}` on client");
         if (!Listeners[subsystem].Writer.TryWrite(subsystem))
         {
             Log.Debug("Notifications channel full, discarding event");
         }
     }
 
-    public async Task<List<Subsystem>> WaitForEvent(Subsystem[] subsystems)
+    public async Task<List<Subsystem>> WaitForEvent(Subsystem[]? subsystems, CancellationToken ct)
     {
-        Log.Debug($"Subscribing to events {subsystems}");
-        List<Task<Subsystem>> tasks = new();
-        using CancellationTokenSource source = new();
+        subsystems ??= AllSubsystems;
 
-        List<Subsystem> earlyResponse = new();
+        Log.Debug($"Subscribing to events {subsystems}");
+
+        var listeners = Listeners;
+        var subsystemEvents = new List<Subsystem>(subsystems.Length);
 
         foreach (var subsystem in subsystems)
         {
             var listener = Listeners[subsystem];
             if (listener.Reader.TryRead(out Subsystem item))
             {
-                earlyResponse.Add(item);
+                subsystemEvents.Add(item);
             }
         }
 
-        if (earlyResponse.Count > 0)
+        if (subsystemEvents.Count > 0)
         {
-            return earlyResponse;
+            return subsystemEvents;
         }
 
-        foreach (var subsystem in subsystems)
-        {
-            var listener = Listeners[subsystem];
-            var subsystemTask = listener.Reader.ReadAsync(source.Token);
-            tasks.Add(subsystemTask.AsTask());
-        }
+        var tasks = subsystems.Select(s => listeners[s]
+            .Reader
+            .ReadAsync(ct)
+            .AsTask());
 
         var finishedTask = await Task.WhenAny(tasks);
-        source.Cancel();
+        subsystemEvents.Add(finishedTask.Result);
 
-        return new List<Subsystem> { finishedTask.Result };
+        Log.Debug($"Consumed event `{finishedTask.Result}` on client");
+
+        return subsystemEvents;
     }
 }

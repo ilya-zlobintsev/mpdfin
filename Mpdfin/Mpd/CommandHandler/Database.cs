@@ -1,4 +1,5 @@
 using FastCache;
+using FastCache.Services;
 
 namespace Mpdfin.Mpd;
 
@@ -21,10 +22,11 @@ partial class CommandHandler
 
     Response Find(List<Filter> filters)
     {
-        if (Cached<Response>.TryGet(Command.find, filters, out var cached))
-        {
-            return cached;
-        }
+        // CacheManager.QueueFullClear<Command, Response>
+        // if (Cached<Response>.TryGet(Command.find, filters, out var cached))
+        // {
+        //     return cached;
+        // }
 
         Response response = new();
 
@@ -34,7 +36,7 @@ partial class CommandHandler
             response.Extend(itemResponse);
         });
 
-        cached.Save(response, TimeSpan.FromMinutes(5));
+        // cached.Save(response, TimeSpan.FromMinutes(5));
         return response;
     }
 }

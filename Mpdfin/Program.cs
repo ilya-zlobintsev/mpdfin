@@ -57,12 +57,19 @@ static class Program
 
     async static Task HandleStream(TcpClient client, Player.Player player, Database db)
     {
-        CommandHandler commandHandler = new(player, db);
+        try
+        {
+            CommandHandler commandHandler = new(player, db);
 
-        await using ClientStream stream = new(client);
-        await stream.WriteGreeting();
+            await using ClientStream stream = new(client);
+            await stream.WriteGreeting();
 
-        await commandHandler.HandleStream(stream);
+            await commandHandler.HandleStream(stream);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex.ToString());
+            throw;
+        }
     }
-
 }

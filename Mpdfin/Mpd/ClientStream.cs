@@ -41,7 +41,10 @@ class ClientStream
 
     public async Task WriteResponse(Response response)
     {
-        Log.Debug($"Writing response {response}");
+        var memory = response.GetMemory();
+        if (!memory.IsEmpty)
+            Log.Debug($"Writing response {response}");
+
         await Write(response.GetMemory());
         await Write("OK"u8.ToArray());
     }

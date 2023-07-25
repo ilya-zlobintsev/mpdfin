@@ -49,7 +49,7 @@ static class TagExtractor
             Tag.Artist => item.Artists?.ToArray(),
             Tag.AlbumArtist => item.AlbumArtist?.ToSingleItemArray(),
             Tag.Genre => item.Genres?.ToArray(),
-            Tag.Date => item.PremiereDate?.ToString().ToSingleItemArray(),
+            Tag.Date => item.PremiereDate?.ToString("yyyy-M-d").ToSingleItemArray(),
             _ => null,
         };
     }

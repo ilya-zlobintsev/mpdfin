@@ -32,11 +32,27 @@ readonly struct ClientNotificationsReceiver
         }
     }
 
-    public async Task<Subsystem> WaitForEvent(Subsystem[] subsystems)
+    public async Task<List<Subsystem>> WaitForEvent(Subsystem[] subsystems)
     {
         Log.Debug($"Subscribing to events {subsystems}");
         List<Task<Subsystem>> tasks = new();
         using CancellationTokenSource source = new();
+
+        List<Subsystem> earlyResponse = new();
+
+        foreach (var subsystem in subsystems)
+        {
+            var listener = Listeners[subsystem];
+            if (listener.Reader.TryRead(out Subsystem item))
+            {
+                earlyResponse.Add(item);
+            }
+        }
+
+        if (earlyResponse.Count > 0)
+        {
+            return earlyResponse;
+        }
 
         foreach (var subsystem in subsystems)
         {
@@ -48,6 +64,6 @@ readonly struct ClientNotificationsReceiver
         var finishedTask = await Task.WhenAny(tasks);
         source.Cancel();
 
-        return finishedTask.Result;
+        return new List<Subsystem> { finishedTask.Result };
     }
 }

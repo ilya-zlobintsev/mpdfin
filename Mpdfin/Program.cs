@@ -151,10 +151,17 @@ static class Program
         var incomingCommandTask = incomingRequests.FirstAsync(source.Token).AsTask();
 
         var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
-        if (finishedTask is Task<Subsystem> task)
+        if (finishedTask == notificationTask)
         {
             await source.CancelAsync();
-            return new Response("changed"u8, Enum.GetName(task.Result)!);
+            Response response = new();
+
+            foreach (var subsystem in notificationTask.Result)
+            {
+                response.Add("changed"u8, Enum.GetName(subsystem));
+            }
+
+            return response;
         }
         else
         {

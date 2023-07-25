@@ -47,4 +47,41 @@ partial class CommandHandler
             return new();
         }
     }
+
+    async Task<Response> Idle(ClientStream stream, List<string> args)
+    {
+        using CancellationTokenSource source = new();
+
+        Subsystem[] subsystems;
+
+        if (args.Count == 0)
+        {
+            subsystems = Enum.GetValues<Subsystem>();
+        }
+        else
+        {
+            subsystems = args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray();
+        }
+
+        var notificationTask = NotificationsReceiver.WaitForEvent(subsystems);
+        var incomingCommandTask = stream.ReadRequest(source.Token);
+
+        var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
+        if (finishedTask == notificationTask)
+        {
+            await source.CancelAsync();
+            Response response = new();
+
+            foreach (var subsystem in notificationTask.Result)
+            {
+                response.Add("changed"u8, Enum.GetName(subsystem));
+            }
+
+            return response;
+        }
+        else
+        {
+            return new();
+        }
+    }
 }

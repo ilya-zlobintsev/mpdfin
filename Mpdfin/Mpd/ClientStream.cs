@@ -63,7 +63,7 @@ class ClientStream
         TcpClient.Dispose();
     }
 
-    public async IAsyncEnumerable<Request> ReadCommands([EnumeratorCancellation] CancellationToken ct = default)
+    public async Task<Request?> ReadRequest(CancellationToken ct = default)
     {
         while (true)
         {
@@ -73,24 +73,19 @@ class ClientStream
             {
                 Log.Debug("Got EOF, closing client stream");
                 EndOfStream = true;
-                yield break;
+                return null;
             }
 
             Log.Debug($"Read client line {line}");
 
-            Request request;
-
             try
             {
-                request = new(line);
+                return new(line);
             }
             catch (Exception ex)
             {
                 await WriteError(Ack.UNKNOWN, messageText: ex.Message);
-                continue;
             }
-
-            yield return request;
         }
     }
 }

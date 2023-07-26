@@ -52,6 +52,11 @@ static class Extensions
         return new string[1] { value };
     }
 
+    public static IEnumerable<string> GetUniqueValues(this Database db, Tag tag)
+    {
+        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct();
+    }
+
     // public static bool ParseEnum<TEnum>(string value, out TEnum result) where TEnum : struct
     // {
     //     if (!int.TryParse(value, out int _) && Enum.TryParse(value, false, out TEnum parsed))

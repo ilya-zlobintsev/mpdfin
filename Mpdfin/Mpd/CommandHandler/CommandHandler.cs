@@ -28,9 +28,9 @@ partial class CommandHandler
             {
                 var response = await HandleRequest(request.Value, stream);
 
-                if (!stream.EndOfStream)
+                if (!stream.EndOfStream && response is not null)
                 {
-                    await stream.WriteResponse(response);
+                    await stream.WriteResponse(response.Value);
                 }
             }
             catch (Exception ex)
@@ -41,13 +41,14 @@ partial class CommandHandler
         }
     }
 
-    async Task<Response> HandleRequest(Request request, ClientStream stream)
+    async Task<Response?> HandleRequest(Request request, ClientStream stream)
     {
         return request.Command switch
         {
             Command.command_list_begin => await HandleCommandList(stream, false),
             Command.command_list_ok_begin => await HandleCommandList(stream, true),
             Command.idle => await Idle(stream, request.Args),
+            Command.noidle => null,
             Command.ping => new(),
             Command.status => Status(),
             Command.currentsong => CurrentSong(),
@@ -58,10 +59,14 @@ partial class CommandHandler
             Command.setvol => SetVol(int.Parse(request.Args[0])),
             Command.addid => AddId(request.Args[0]),
             Command.playlistinfo => PlaylistInfo(),
-            Command.plchanges => PlChanges(int.Parse(request.Args[0])),
+            Command.plchanges => PlChanges(long.Parse(request.Args[0])),
             Command.tagtypes => TagTypes(),
             Command.list => List(Enum.Parse<Tag>(request.Args[0])),
             Command.find => Find(Filter.ParseFilters(request.Args)),
+            Command.outputs => Outputs(),
+            Command.stats => Stats(),
+            Command.commands => Commands(),
+            Command.decoders => Decoders(),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }
@@ -98,7 +103,7 @@ partial class CommandHandler
         foreach (var queuedRequest in requestList)
         {
             var response = await HandleRequest(queuedRequest, stream);
-            totalResponse.Extend(response);
+            totalResponse.Extend(response.Value);
 
             if (printOk)
             {

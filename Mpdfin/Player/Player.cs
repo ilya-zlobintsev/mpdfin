@@ -1,5 +1,6 @@
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
+using LibVLCSharp.Shared.Structures;
 using Serilog;
 
 namespace Mpdfin.Player;
@@ -44,7 +45,7 @@ public class Player
     }
 
     public float Duration => MediaPlayer.Length / 1000;
-    public float Elapsed => MediaPlayer.Length / 1000 * MediaPlayer.Position;
+    public float Elapsed => Math.Abs(MediaPlayer.Length / 1000 * MediaPlayer.Position);
 
     public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
 
@@ -54,7 +55,7 @@ public class Player
         MediaPlayer = new(libVLC);
 
         Queue = new();
-        PlaylistVersion = 0;
+        PlaylistVersion = 1;
         nextSongId = 0;
 
         MediaPlayer.EndReached += (_, _) => NextSong();
@@ -129,6 +130,7 @@ public class Player
     }
 
     public VLCState State => MediaPlayer.State;
+    public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 
     public void SetPause(bool? pause)
     {
@@ -141,5 +143,6 @@ public class Player
             MediaPlayer.Pause();
         }
         RaiseEvent(Subsystem.player);
+        RaiseEvent(Subsystem.mixer);
     }
 }

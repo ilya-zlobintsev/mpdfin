@@ -21,6 +21,10 @@ public enum Command
     idle,
     noidle,
     list,
+    outputs,
+    stats,
+    commands,
+    decoders,
 
     command_list_begin,
     command_list_ok_begin,

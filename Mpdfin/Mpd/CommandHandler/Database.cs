@@ -7,7 +7,7 @@ partial class CommandHandler
 {
     Response List(Tag tag)
     {
-        var values = Db.Items.SelectMany(item => item.GetTagValue(tag)!).Distinct();
+        var values = Db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct();
         var key = Enum.GetName(tag)!.ToU8String();
 
         Response response = new();

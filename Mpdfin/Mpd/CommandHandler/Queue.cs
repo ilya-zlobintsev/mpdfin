@@ -34,7 +34,7 @@ partial class CommandHandler
         return response;
     }
 
-    Response PlChanges(int version)
+    Response PlChanges(long version)
     {
         // Naive implementation
         if (version < Player.PlaylistVersion)

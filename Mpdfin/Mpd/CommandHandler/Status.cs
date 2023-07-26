@@ -18,6 +18,7 @@ partial class CommandHandler
         if (Player.CurrentPos is not null)
         {
             response.Add("song"u8, Player.CurrentPos.Value.ToU8String());
+            response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToU8String());
         }
 
         response.Add("volume"u8, Player.Volume.ToU8String());
@@ -49,6 +50,17 @@ partial class CommandHandler
         }
     }
 
+    Response Stats()
+    {
+        Response response = new();
+
+        response.Add("artists"u8, Db.Items.SelectMany(item => item.GetTagValue(Tag.Artist)!).Distinct().Count().ToU8String());
+        response.Add("albums"u8, Db.Items.SelectMany(item => item.GetTagValue(Tag.Album)!).Distinct().Count().ToU8String());
+        response.Add("songs"u8, Db.Items.Count.ToU8String());
+
+        return response;
+    }
+
     async Task<Response> Idle(ClientStream stream, List<string> args)
     {
         var subsystems = args.Count > 0
@@ -76,14 +88,13 @@ partial class CommandHandler
         }
         else if (finishedTask == incomingCommandTask)
         {
-            var request = incomingCommandTask.Result!.Value;
-            if (request.Command == Command.noidle)
+            if (incomingCommandTask.Result?.Command == Command.noidle || incomingCommandTask.Result is null)
             {
                 return new();
             }
             else
             {
-                throw new Exception("Only `noidle` can be called when idling");
+                throw new Exception($"Only `noidle` can be called when idling, got `{incomingCommandTask.Result?.Command}`");
             }
         }
         else

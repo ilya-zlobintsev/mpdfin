@@ -1,3 +1,4 @@
+using System.Globalization;
 using Jellyfin.Sdk;
 using Mpdfin.Player;
 using Serilog;
@@ -52,9 +53,19 @@ static class Extensions
         return new string[1] { value };
     }
 
-    public static IEnumerable<string> GetUniqueValues(this Database db, Tag tag)
+    public static IEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
     {
         return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct();
+    }
+
+    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string value)
+    {
+        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value));
+    }
+
+    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
+    {
+        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter)));
     }
 
     // public static bool ParseEnum<TEnum>(string value, out TEnum result) where TEnum : struct

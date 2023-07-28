@@ -54,8 +54,8 @@ partial class CommandHandler
     {
         Response response = new();
 
-        response.Add("artists"u8, Db.GetUniqueValues(Tag.Artist).Count().ToU8String());
-        response.Add("albums"u8, Db.GetUniqueValues(Tag.Album).Count().ToU8String());
+        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count().ToU8String());
+        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count().ToU8String());
         response.Add("songs"u8, Db.Items.Count.ToU8String());
 
         return response;

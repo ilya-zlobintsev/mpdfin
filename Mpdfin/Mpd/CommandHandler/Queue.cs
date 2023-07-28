@@ -2,9 +2,15 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response AddId(string id)
+    Response Add(string uri)
     {
-        var guid = Guid.Parse(id);
+        AddId(uri);
+        return new();
+    }
+
+    Response AddId(string uri)
+    {
+        var guid = Guid.Parse(uri);
         var item = Db.Items.Find(item => item.Id == guid);
 
         if (item is not null)
@@ -15,7 +21,7 @@ partial class CommandHandler
         }
         else
         {
-            throw new FileNotFoundException($"Item {id} not found");
+            throw new FileNotFoundException($"Item {uri} not found");
         }
     }
 

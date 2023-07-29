@@ -33,6 +33,8 @@ class ClientStream
         var memory = response.GetMemory();
         if (!memory.IsEmpty)
             Log.Debug($"Writing response {response}");
+        else
+            Log.Debug("Writing empty response");
 
         await Write(memory);
         await Write(OK);

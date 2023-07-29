@@ -25,7 +25,13 @@ static class FilterExtensions
     public static bool MatchesFilter(this BaseItemDto item, Filter filter)
     {
         var tagValues = item.GetTagValue(filter.Tag);
-
-        return tagValues?.Any(tagValue => tagValue == filter.Value) == true;
+        if (tagValues is null)
+        {
+            return filter.Value.Length == 0;
+        }
+        else
+        {
+            return tagValues.Any(tagValue => tagValue == filter.Value);
+        }
     }
 }

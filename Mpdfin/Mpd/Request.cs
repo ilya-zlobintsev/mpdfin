@@ -13,6 +13,9 @@ public enum Command
     pause,
     getvol,
     setvol,
+    seek,
+    seekid,
+    seekcur,
     add,
     addid,
     playlistinfo,
@@ -91,7 +94,8 @@ public readonly record struct Request
                         throw new Exception($"Unexpected data before quote: {currentArgBuilder}");
                     }
 
-                    for (i++; i < chars.Length; i++)
+                    var exitLoop = false;
+                    for (i++; i < chars.Length && !exitLoop; i++)
                     {
                         var innerC = chars[i];
 
@@ -101,6 +105,7 @@ public readonly record struct Request
                                 var arg = currentArgBuilder.ToString();
                                 Args.Add(arg);
                                 currentArgBuilder.Clear();
+                                exitLoop = true;
                                 break;
                             case '\\':
                                 i++;

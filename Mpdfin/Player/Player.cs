@@ -133,6 +133,12 @@ public class Player
         }
     }
 
+    public void Seek(double time)
+    {
+        MediaPlayer.SeekTo(TimeSpan.FromSeconds(time));
+        RaiseEvent(Subsystem.player);
+    }
+
     public VLCState State => MediaPlayer.State;
     public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 

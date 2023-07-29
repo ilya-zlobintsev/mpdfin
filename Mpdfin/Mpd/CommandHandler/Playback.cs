@@ -12,10 +12,9 @@ partial class CommandHandler
         return new();
     }
 
-    Response PlayId(string id)
+    Response PlayId(int id)
     {
-        var intId = int.Parse(id);
-        var index = Player.Queue.FindIndex(song => song.Id == intId);
+        var index = Player.Queue.FindIndex(song => song.Id == id);
 
         if (index == -1)
             throw new FileNotFoundException($"Song with id {id} not found in the database");
@@ -45,6 +44,27 @@ partial class CommandHandler
     Response SetVol(int vol)
     {
         Player.Volume = vol;
+        return new();
+    }
+
+    Response Seek(int songPos, double time)
+    {
+        if (Player.CurrentPos != songPos)
+        {
+            Player.SetCurrent(songPos);
+        }
+        return SeekCur(time);
+    }
+
+    Response SeekId(int id, double time)
+    {
+        var songPos = Player.Queue.FindIndex(song => song.Id == id);
+        return Seek(songPos, time);
+    }
+
+    Response SeekCur(double time)
+    {
+        Player.Seek(time);
         return new();
     }
 }

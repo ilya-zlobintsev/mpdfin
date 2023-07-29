@@ -29,6 +29,14 @@ public class Parsing
     }
 
     [Fact]
+    public void QuotedArguments()
+    {
+        Request request = new("seek \"0\" \"10\"");
+        Assert.Equal(Command.seek, request.Command);
+        Assert.Equal(new List<string>() { "0", "10" }, request.Args);
+    }
+
+    [Fact]
     public void QuotedWithSpace()
     {
         Request request = new("find \"multi word arg\"");

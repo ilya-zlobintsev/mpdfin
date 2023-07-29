@@ -8,6 +8,7 @@ namespace Mpdfin.Mpd;
 class ClientStream
 {
     readonly static ReadOnlyMemory<byte> GREETING = "OK MPD 0.19.0\n"u8.ToArray();
+    readonly static ReadOnlyMemory<byte> OK = "OK\n"u8.ToArray();
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
     readonly StreamReader Reader;
@@ -34,8 +35,8 @@ class ClientStream
         if (!memory.IsEmpty)
             Log.Debug($"Writing response {response}");
 
-        await Write(response.GetMemory());
-        await Write("OK\n"u8.ToArray());
+        await Write(memory);
+        await Write(OK);
     }
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")

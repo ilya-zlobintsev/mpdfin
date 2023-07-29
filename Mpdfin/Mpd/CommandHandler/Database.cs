@@ -1,7 +1,4 @@
 using System.Net;
-using System.Reflection.Metadata.Ecma335;
-using FastCache;
-using FastCache.Services;
 using Jellyfin.Sdk;
 using Serilog;
 
@@ -26,12 +23,6 @@ partial class CommandHandler
 
     Response Find(List<Filter> filters)
     {
-        // CacheManager.QueueFullClear<Command, Response>
-        // if (Cached<Response>.TryGet(Command.find, filters, out var cached))
-        // {
-        //     return cached;
-        // }
-
         Response response = new();
 
         Db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).ForEach(item =>
@@ -40,7 +31,6 @@ partial class CommandHandler
             response.Extend(itemResponse);
         });
 
-        // cached.Save(response, TimeSpan.FromMinutes(5));
         return response;
     }
 

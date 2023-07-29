@@ -67,17 +67,4 @@ static class Extensions
     {
         return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter)));
     }
-
-    // public static bool ParseEnum<TEnum>(string value, out TEnum result) where TEnum : struct
-    // {
-    //     if (!int.TryParse(value, out int _) && Enum.TryParse(value, false, out TEnum parsed))
-    //     {
-    //         result = parsed;
-    //         return true;
-    //     }
-    //     else
-    //     {
-    //         return false;
-    //     }
-    // }
 }

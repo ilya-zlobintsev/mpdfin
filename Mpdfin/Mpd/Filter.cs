@@ -3,7 +3,7 @@ using Mpdfin.Mpd;
 
 namespace Mpdfin.Mpd;
 
-readonly record struct Filter(Tag Tag, string Value)
+readonly record struct Filter(Tag Tag, string? Value)
 {
     public static List<Filter> ParseFilters(List<string> args)
     {
@@ -27,7 +27,7 @@ static class FilterExtensions
         var tagValues = item.GetTagValue(filter.Tag);
         if (tagValues is null)
         {
-            return filter.Value.Length == 0;
+            return string.IsNullOrEmpty(filter.Value);
         }
         else
         {

@@ -25,11 +25,10 @@ partial class CommandHandler
     {
         Response response = new();
 
-        Db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).ForEach(item =>
+        foreach (var item in Db.GetMatchingItems(filters.ToArray()))
         {
-            var itemResponse = item.GetResponse();
-            response.Extend(itemResponse);
-        });
+            response.Extend(item.GetResponse());
+        }
 
         return response;
     }
@@ -45,8 +44,15 @@ partial class CommandHandler
                 {
                     foreach (var artist in Db.GetUniqueTagValues(Tag.Artist))
                     {
-                        response.Add("directory"u8, artist);
+                        if (artist is not null)
+                            response.Add("directory"u8, artist);
                     }
+
+                    foreach (var item in Db.GetMatchingItems(Tag.Artist, null))
+                    {
+                        response.Extend(item.GetResponse());
+                    }
+
                     break;
                 }
             case 1:
@@ -55,7 +61,15 @@ partial class CommandHandler
                     var albums = Db.GetMatchingItems(Tag.Artist, artist).Select(item => item.Album).Distinct();
                     foreach (var album in albums)
                     {
-                        response.Add("directory"u8, $"{artist}/{album}");
+                        if (artist is not null && album is not null)
+                            response.Add("directory"u8, $"{artist}/{album}");
+                    }
+
+                    var filters = new Filter[] { new(Tag.Artist, artist), new(Tag.Album, null) };
+                    var itemsWithoutAlbum = Db.GetMatchingItems(filters);
+                    foreach (var item in itemsWithoutAlbum)
+                    {
+                        response.Extend(item.GetResponse());
                     }
                     break;
                 }

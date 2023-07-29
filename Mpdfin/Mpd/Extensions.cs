@@ -55,16 +55,16 @@ static class Extensions
 
     public static IEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
     {
-        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct();
+        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct().Order();
     }
 
-    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string value)
+    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
     {
-        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value));
+        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value)).OrderBy(item => item.Name);
     }
 
     public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
     {
-        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter)));
+        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderBy(item => item.Name);
     }
 }

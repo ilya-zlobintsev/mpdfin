@@ -32,6 +32,17 @@ static class Extensions
         return response;
     }
 
+    /// <summary>
+    /// Gets the item duration in seconds.
+    /// </summary>
+    public static double? GetDuration(this BaseItemDto item)
+    {
+        if (item.RunTimeTicks is not null)
+            return (double)item.RunTimeTicks / 10000000;
+        else
+            return null;
+    }
+
     public static Response GetResponse(this BaseItemDto item)
     {
         Response response = new();
@@ -43,6 +54,13 @@ static class Extensions
             var key = Enum.GetName(tag)!.ToU8String();
             var value = item.GetTagValue(tag);
             response.Add(key, value);
+        }
+
+        var duration = item.GetDuration();
+        if (duration is not null)
+        {
+            response.Add("duration"u8, duration.Value.ToU8String());
+            response.Add("time"u8, ((int)duration.Value).ToU8String());
         }
 
         return response;

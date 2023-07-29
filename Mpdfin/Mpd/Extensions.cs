@@ -1,7 +1,5 @@
-using System.Globalization;
 using Jellyfin.Sdk;
 using Mpdfin.Player;
-using Serilog;
 
 namespace Mpdfin.Mpd;
 

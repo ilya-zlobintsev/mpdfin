@@ -1,5 +1,4 @@
 using System.Threading.Channels;
-using Jellyfin.Sdk;
 using Serilog;
 
 namespace Mpdfin.Mpd;

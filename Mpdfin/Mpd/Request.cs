@@ -13,6 +13,7 @@ public enum Command
     pause,
     getvol,
     setvol,
+    volume,
     seek,
     seekid,
     seekcur,

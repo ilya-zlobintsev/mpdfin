@@ -60,6 +60,7 @@ partial class CommandHandler
             Command.seekcur => SeekCur(double.Parse(request.Args[0])),
             Command.getvol => GetVol(),
             Command.setvol => SetVol(int.Parse(request.Args[0])),
+            Command.volume => Volume(int.Parse(request.Args[0])),
             Command.add => Add(request.Args[0]),
             Command.addid => AddId(request.Args[0]),
             Command.playlistinfo => PlaylistInfo(),

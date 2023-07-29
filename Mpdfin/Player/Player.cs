@@ -61,6 +61,9 @@ public class Player
         MediaPlayer.Playing += (e, args) => RaisePlaybackChanged();
         MediaPlayer.Stopped += (e, args) => RaisePlaybackChanged();
         MediaPlayer.Paused += (e, args) => RaisePlaybackChanged();
+        MediaPlayer.VolumeChanged += (e, args) => RaiseEvent(Subsystem.mixer);
+        MediaPlayer.Muted += (e, args) => RaiseEvent(Subsystem.mixer);
+        MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
         MediaPlayer.EndReached += (_, _) => NextSong();
     }

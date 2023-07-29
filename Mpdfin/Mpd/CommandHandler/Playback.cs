@@ -47,6 +47,12 @@ partial class CommandHandler
         return new();
     }
 
+    Response Volume(int change)
+    {
+        Player.Volume += change;
+        return new();
+    }
+
     Response Seek(int songPos, double time)
     {
         if (Player.CurrentPos != songPos)

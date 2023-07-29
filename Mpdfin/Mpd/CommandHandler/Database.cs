@@ -1,7 +1,3 @@
-using System.Net;
-using Jellyfin.Sdk;
-using Serilog;
-
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler

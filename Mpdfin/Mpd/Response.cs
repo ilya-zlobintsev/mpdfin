@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using Serilog;
 
 namespace Mpdfin.Mpd;
 

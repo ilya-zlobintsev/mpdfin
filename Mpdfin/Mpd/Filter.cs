@@ -1,5 +1,4 @@
 using Jellyfin.Sdk;
-using Mpdfin.Mpd;
 
 namespace Mpdfin.Mpd;
 

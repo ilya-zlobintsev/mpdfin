@@ -58,6 +58,10 @@ public class Player
         PlaylistVersion = 1;
         nextSongId = 0;
 
+        MediaPlayer.Playing += (e, args) => RaisePlaybackChanged();
+        MediaPlayer.Stopped += (e, args) => RaisePlaybackChanged();
+        MediaPlayer.Paused += (e, args) => RaisePlaybackChanged();
+
         MediaPlayer.EndReached += (_, _) => NextSong();
     }
 
@@ -142,6 +146,10 @@ public class Player
         {
             MediaPlayer.Pause();
         }
+    }
+
+    void RaisePlaybackChanged()
+    {
         RaiseEvent(Subsystem.player);
         RaiseEvent(Subsystem.mixer);
     }

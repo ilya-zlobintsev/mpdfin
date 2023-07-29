@@ -40,7 +40,7 @@ class ClientStream
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")
     {
-        var line = $"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}";
+        var line = $"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}\n";
         return Write(Encoding.UTF8.GetBytes(line));
     }
 

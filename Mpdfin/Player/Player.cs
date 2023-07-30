@@ -14,15 +14,14 @@ public class Player
     int nextSongId;
     public int PlaylistVersion;
 
-    int? _currentPos;
-    public int? CurrentPos => _currentPos;
+    public int? CurrentPos { get; private set; }
     public Song? CurrentSong
     {
         get
         {
-            if (_currentPos is not null)
+            if (CurrentPos is not null)
             {
-                return Queue[_currentPos.Value];
+                return Queue[CurrentPos.Value];
             }
             else
             {
@@ -97,8 +96,8 @@ public class Player
     public void Stop()
     {
         MediaPlayer.Stop();
-        _currentPos = 0;
-        RaiseEvent(Subsystem.player);
+        CurrentPos = null;
+        RaisePlaybackChanged();
     }
 
     /// <summary>
@@ -116,23 +115,47 @@ public class Player
 
     public void SetCurrent(int newPosition)
     {
-        _currentPos = newPosition;
+        CurrentPos = newPosition;
         PlayCurrent();
     }
 
     public void NextSong()
     {
+        if (CurrentPos is null)
+        {
+            throw new Exception("Not currently playing");
+        }
+
         if (CurrentPos < Queue.Count - 1)
         {
             Log.Debug("Switching to next item");
-            _currentPos += 1;
+            CurrentPos += 1;
             PlayCurrent();
         }
         else
         {
             Log.Debug("End of playlist reached");
-            _currentPos = null;
-            RaiseEvent(Subsystem.playlist);
+            Stop();
+        }
+    }
+
+    public void PreviousSong()
+    {
+        if (CurrentPos is null)
+        {
+            throw new Exception("Not currently playing");
+        }
+
+        if (CurrentPos > 0)
+        {
+            Log.Debug("Switching to previous item");
+            CurrentPos -= 1;
+            PlayCurrent();
+        }
+        else
+        {
+            Log.Debug("Start of playlist reached");
+            Stop();
         }
     }
 

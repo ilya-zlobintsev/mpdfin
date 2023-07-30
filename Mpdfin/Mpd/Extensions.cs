@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 using Jellyfin.Sdk;
 using Mpdfin.Player;
 
@@ -76,11 +78,16 @@ static class Extensions
 
     public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
     {
-        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value)).OrderBy(item => item.Name);
+        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value)).OrderItems();
     }
 
     public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
     {
-        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderBy(item => item.Name);
+        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderItems();
+    }
+
+    public static IOrderedEnumerable<BaseItemDto> OrderItems(this IEnumerable<BaseItemDto> items)
+    {
+        return items.OrderBy(item => (item.IndexNumber, item.PremiereDate, item.Name));
     }
 }

@@ -36,10 +36,13 @@ partial class CommandHandler
         return new();
     }
 
-    Response GetVol()
+    Response Stop()
     {
-        return new("volume"u8, Player.Volume.ToString());
+        Player.Stop();
+        return new();
     }
+
+    Response GetVol() => new("volume"u8, Player.Volume.ToString());
 
     Response SetVol(int vol)
     {
@@ -71,6 +74,18 @@ partial class CommandHandler
     Response SeekCur(double time)
     {
         Player.Seek(time);
+        return new();
+    }
+
+    Response Next()
+    {
+        Player.NextSong();
+        return new();
+    }
+
+    Response Previous()
+    {
+        Player.PreviousSong();
         return new();
     }
 }

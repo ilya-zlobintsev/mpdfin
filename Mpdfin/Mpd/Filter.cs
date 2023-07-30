@@ -10,7 +10,7 @@ readonly record struct Filter(Tag Tag, string? Value)
 
         for (int i = 0; i + 1 < args.Count; i += 2)
         {
-            var tag = Enum.Parse<Tag>(args[i]);
+            var tag = Enum.Parse<Tag>(args[i], true);
             var value = args[i + 1];
             filters.Add(new Filter(tag, value));
         }

@@ -54,7 +54,7 @@ partial class CommandHandler
             case 1:
                 {
                     var artist = parts[0];
-                    var albums = Db.GetMatchingItems(Tag.Artist, artist).Select(item => item.Album).Distinct();
+                    var albums = Db.GetMatchingItems(Tag.Artist, artist).SelectMany(item => item.GetTagValue(Tag.Album) ?? Array.Empty<string>()).Distinct();
                     foreach (var album in albums)
                     {
                         if (artist is not null && album is not null)

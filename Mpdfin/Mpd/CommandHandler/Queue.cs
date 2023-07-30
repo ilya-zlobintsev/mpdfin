@@ -52,4 +52,10 @@ partial class CommandHandler
             return new();
         }
     }
+
+    Response Clear()
+    {
+        Player.ClearQueue();
+        return new();
+    }
 }

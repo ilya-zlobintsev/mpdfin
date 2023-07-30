@@ -88,4 +88,9 @@ partial class CommandHandler
         Player.PreviousSong();
         return new();
     }
+
+    static Response ReplayGainStatus()
+    {
+        return new("replay_gain_mode"u8, "off");
+    }
 }

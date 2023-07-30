@@ -43,8 +43,20 @@ public class Player
         }
     }
 
-    public float Duration => MediaPlayer.Length / 1000;
-    public float Elapsed => Math.Abs(MediaPlayer.Length / 1000 * MediaPlayer.Position);
+    public float? Duration
+    {
+        get
+        {
+            return CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
+        }
+    }
+    public float? Elapsed
+    {
+        get
+        {
+            return Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
+        }
+    }
 
     public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
 
@@ -95,9 +107,16 @@ public class Player
 
     public void Stop()
     {
-        MediaPlayer.Stop();
         CurrentPos = null;
+        MediaPlayer.Stop();
         RaisePlaybackChanged();
+    }
+
+    public void ClearQueue()
+    {
+        Stop();
+        Queue.Clear();
+        RaiseEvent(Subsystem.playlist);
     }
 
     /// <summary>

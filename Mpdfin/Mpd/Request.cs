@@ -22,6 +22,7 @@ public enum Command
     previous,
     add,
     addid,
+    clear,
     playlistinfo,
     plchanges,
     find,
@@ -34,6 +35,7 @@ public enum Command
     stats,
     commands,
     decoders,
+    replay_gain_status,
 
     command_list_begin,
     command_list_ok_begin,

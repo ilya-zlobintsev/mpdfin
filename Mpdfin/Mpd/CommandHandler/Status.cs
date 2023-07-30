@@ -20,6 +20,13 @@ partial class CommandHandler
             response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToU8String());
         }
 
+        if (Player.Elapsed is not null)
+        {
+            response.Add("elapsed"u8, Player.Elapsed.Value.ToU8String());
+            response.Add("time"u8, $"{(int)Player.Elapsed}:{Player.Duration}");
+            response.Add("duration"u8, Player.Duration!.Value.ToU8String());
+        }
+
         response.Add("volume"u8, Player.Volume.ToU8String());
         response.Add("state"u8, Player.State switch
         {
@@ -29,9 +36,6 @@ partial class CommandHandler
         });
         response.Add("playlist"u8, Player.PlaylistVersion.ToU8String());
         response.Add("playlistlength"u8, Player.Queue.Count.ToU8String());
-        response.Add("elapsed"u8, Player.Elapsed.ToU8String());
-        response.Add("time"u8, $"{(int)Player.Elapsed}:{Player.Duration}");
-        response.Add("duration"u8, Player.Duration.ToU8String());
 
         return response;
     }

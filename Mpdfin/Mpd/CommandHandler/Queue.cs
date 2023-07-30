@@ -2,13 +2,13 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Add(string uri)
+    public Response Add(string uri)
     {
         AddId(uri);
         return new();
     }
 
-    Response AddId(string uri)
+    public Response AddId(string uri)
     {
         var guid = Guid.Parse(uri);
         var item = Db.Items.Find(item => item.Id == guid);
@@ -25,7 +25,7 @@ partial class CommandHandler
         }
     }
 
-    Response PlaylistInfo()
+    public Response PlaylistInfo()
     {
         Response response = new();
 
@@ -40,7 +40,7 @@ partial class CommandHandler
         return response;
     }
 
-    Response PlChanges(long version)
+    public Response PlChanges(long version)
     {
         // Naive implementation
         if (version < Player.PlaylistVersion)
@@ -53,7 +53,7 @@ partial class CommandHandler
         }
     }
 
-    Response Clear()
+    public Response Clear()
     {
         Player.ClearQueue();
         return new();

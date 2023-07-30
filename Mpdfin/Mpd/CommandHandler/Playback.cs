@@ -2,7 +2,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Play(int pos)
+    public Response Play(int pos)
     {
         if (pos >= Player.Queue.Count)
             throw new FileNotFoundException("Invalid song index");
@@ -12,8 +12,9 @@ partial class CommandHandler
         return new();
     }
 
-    Response PlayId(int id)
+    public Response PlayId(string rawId)
     {
+        var id = int.Parse(rawId);
         var index = Player.Queue.FindIndex(song => song.Id == id);
 
         if (index == -1)
@@ -24,7 +25,12 @@ partial class CommandHandler
         return new();
     }
 
-    Response Pause(string? state)
+    public Response Pause()
+    {
+        return Pause(null);
+    }
+
+    public Response Pause(string? state)
     {
         bool? value = state switch
         {
@@ -36,27 +42,27 @@ partial class CommandHandler
         return new();
     }
 
-    Response Stop()
+    public Response Stop()
     {
         Player.Stop();
         return new();
     }
 
-    Response GetVol() => new("volume"u8, Player.Volume.ToString());
+    public Response GetVol() => new("volume"u8, Player.Volume.ToString());
 
-    Response SetVol(int vol)
+    public Response SetVol(int vol)
     {
         Player.Volume = vol;
         return new();
     }
 
-    Response Volume(int change)
+    public Response Volume(int change)
     {
         Player.Volume += change;
         return new();
     }
 
-    Response Seek(int songPos, double time)
+    public Response Seek(int songPos, double time)
     {
         if (Player.CurrentPos != songPos)
         {
@@ -65,31 +71,31 @@ partial class CommandHandler
         return SeekCur(time);
     }
 
-    Response SeekId(int id, double time)
+    public Response SeekId(int id, double time)
     {
         var songPos = Player.Queue.FindIndex(song => song.Id == id);
         return Seek(songPos, time);
     }
 
-    Response SeekCur(double time)
+    public Response SeekCur(double time)
     {
         Player.Seek(time);
         return new();
     }
 
-    Response Next()
+    public Response Next()
     {
         Player.NextSong();
         return new();
     }
 
-    Response Previous()
+    public Response Previous()
     {
         Player.PreviousSong();
         return new();
     }
 
-    static Response ReplayGainStatus()
+    public static Response ReplayGainStatus()
     {
         return new("replay_gain_mode"u8, "off");
     }

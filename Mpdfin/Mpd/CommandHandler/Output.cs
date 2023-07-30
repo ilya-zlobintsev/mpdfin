@@ -2,7 +2,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Outputs()
+    public Response Outputs()
     {
         Response response = new();
 

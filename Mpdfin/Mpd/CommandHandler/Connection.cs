@@ -2,7 +2,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    static Response TagTypes()
+    public static Response TagTypes()
     {
         Response response = new();
 

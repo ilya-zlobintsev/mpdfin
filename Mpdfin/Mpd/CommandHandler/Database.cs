@@ -2,7 +2,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response List(Tag tag)
+    public Response List(Tag tag)
     {
         var values = Db.GetUniqueTagValues(tag);
         var key = Enum.GetName(tag)!.ToU8String();
@@ -17,7 +17,7 @@ partial class CommandHandler
         return response;
     }
 
-    Response Find(List<Filter> filters)
+    public Response Find(List<Filter> filters)
     {
         Response response = new();
 
@@ -29,7 +29,7 @@ partial class CommandHandler
         return response;
     }
 
-    Response LsInfo(string? uri)
+    public Response LsInfo(string? uri)
     {
         var parts = uri?.Split("/").Where(item => item.Length > 0).ToArray() ?? Array.Empty<string>();
         Response response = new();

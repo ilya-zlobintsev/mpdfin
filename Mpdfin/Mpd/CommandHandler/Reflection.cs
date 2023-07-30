@@ -2,7 +2,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    static Response Commands()
+    public static Response Commands()
     {
         Response response = new();
 
@@ -14,7 +14,7 @@ partial class CommandHandler
         return response;
     }
 
-    static Response Decoders()
+    public static Response Decoders()
     {
         return new();
     }

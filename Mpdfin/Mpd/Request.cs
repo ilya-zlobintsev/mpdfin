@@ -44,26 +44,14 @@ public enum Command
 
 public readonly record struct Request
 {
-    public readonly Command Command;
+    public readonly string Command;
     public readonly List<string> Args;
-
-    static Command ParseCommand(string rawCommand)
-    {
-        if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
-        {
-            return command;
-        }
-        else
-        {
-            throw new Exception($"unknown command {rawCommand}");
-        }
-    }
 
     public Request(string raw)
     {
         var chars = raw.ToCharArray();
 
-        StringBuilder rawCommandBuilder = new();
+        StringBuilder commandBuilder = new();
         int i;
 
         for (i = 0; i < chars.Length; i++)
@@ -71,20 +59,17 @@ public readonly record struct Request
             var c = chars[i];
             if (c == ' ')
             {
-                var rawCommand = rawCommandBuilder.ToString();
-                Command = ParseCommand(rawCommand);
+                Command = commandBuilder.ToString();
                 break;
             }
             else
             {
-                rawCommandBuilder.Append(c);
+                commandBuilder.Append(c);
             }
         }
 
-        if (i == chars.Length)
-        {
-            Command = ParseCommand(rawCommandBuilder.ToString());
-        }
+        Command ??= commandBuilder.ToString();
+        Command = Command.ToLower().Replace("_", "");
 
         Args = new();
         StringBuilder currentArgBuilder = new();

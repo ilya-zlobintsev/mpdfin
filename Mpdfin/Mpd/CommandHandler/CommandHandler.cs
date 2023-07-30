@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.Reflection;
+using Jellyfin.Sdk;
 using Serilog;
 
 namespace Mpdfin.Mpd;
@@ -7,11 +10,13 @@ partial class CommandHandler
     readonly Player.Player Player;
     readonly Database Db;
     public readonly ClientNotificationsReceiver NotificationsReceiver;
+    readonly ClientStream ClientStream;
 
-    public CommandHandler(Player.Player player, Database db)
+    public CommandHandler(Player.Player player, Database db, ClientStream clientStream)
     {
         Player = player;
         Db = db;
+        ClientStream = clientStream;
         NotificationsReceiver = new();
 
         Player.OnSubsystemUpdate += (e, args) => NotificationsReceiver.SendEvent(args.Subsystem);
@@ -19,70 +24,53 @@ partial class CommandHandler
         Db.OnDatabaseUpdated += (e, args) => NotificationsReceiver.SendEvent(Subsystem.database);
     }
 
-    public async Task HandleStream(ClientStream stream)
+    public async Task HandleStream()
     {
         Request? request;
-        while ((request = await stream.ReadRequest()) is not null)
+        while ((request = await ClientStream.ReadRequest()) is not null)
         {
             try
             {
-                var response = await HandleRequest(request.Value, stream);
+                var response = await HandleRequest(request.Value);
 
-                if (!stream.EndOfStream && response is not null)
+                if (!ClientStream.EndOfStream && response is not null)
                 {
-                    await stream.WriteResponse(response.Value);
+                    await ClientStream.WriteResponse(response.Value);
                 }
             }
             catch (Exception ex)
             {
                 Log.Warning($"Error occured when processing request `{request}`: {ex}");
-                await stream.WriteError(Ack.UNKNOWN, messageText: ex.Message);
+                await ClientStream.WriteError(Ack.UNKNOWN, messageText: ex.Message);
             }
         }
     }
 
-    async Task<Response?> HandleRequest(Request request, ClientStream stream)
+    async Task<Response?> HandleRequest(Request request)
     {
-        return request.Command switch
+        var methods = GetType().GetMethods();
+        var commandMethods = Array.FindAll(methods, method => method.Name.ToLower() == request.Command)
+            ?? throw new NotImplementedException($"Command `{request.Command}` not recognized");
+        // Find the right overload
+        var commandMethod = Array.Find(commandMethods, method => method.GetParameters().Length == request.Args.Count) ?? throw new Exception("Invalid number of arguments provided");
+
+        var obj = commandMethod.Invoke(this, request.Args.ToArray());
+
+        if (obj is Task<Response> task)
         {
-            Command.command_list_begin => await HandleCommandList(stream, false),
-            Command.command_list_ok_begin => await HandleCommandList(stream, true),
-            Command.idle => await Idle(stream, request.Args),
-            Command.noidle => null,
-            Command.ping => new(),
-            Command.status => Status(),
-            Command.currentsong => CurrentSong(),
-            Command.play => Play(int.Parse(request.Args[0])),
-            Command.playid => PlayId(int.Parse(request.Args[0])),
-            Command.pause => Pause(request.Args.ElementAtOrDefault(0)),
-            Command.stop => Stop(),
-            Command.seek => Seek(int.Parse(request.Args[0]), double.Parse(request.Args[1])),
-            Command.seekid => SeekId(int.Parse(request.Args[0]), double.Parse(request.Args[1])),
-            Command.seekcur => SeekCur(double.Parse(request.Args[0])),
-            Command.next => Next(),
-            Command.previous => Previous(),
-            Command.getvol => GetVol(),
-            Command.setvol => SetVol(int.Parse(request.Args[0])),
-            Command.volume => Volume(int.Parse(request.Args[0])),
-            Command.replay_gain_status => ReplayGainStatus(),
-            Command.add => Add(request.Args[0]),
-            Command.addid => AddId(request.Args[0]),
-            Command.clear => Clear(),
-            Command.playlistinfo => PlaylistInfo(),
-            Command.plchanges => PlChanges(long.Parse(request.Args[0])),
-            Command.tagtypes => TagTypes(),
-            Command.list => List(Enum.Parse<Tag>(request.Args[0], true)),
-            Command.lsinfo => LsInfo(request.Args.FirstOrDefault()),
-            Command.find => Find(Filter.ParseFilters(request.Args)),
-            Command.outputs => Outputs(),
-            Command.stats => Stats(),
-            Command.commands => Commands(),
-            Command.decoders => Decoders(),
-            _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
-        };
+            return await task;
+        }
+        else if (obj is Response response)
+        {
+            return response;
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
     }
 
-    async Task<Response> HandleCommandList(ClientStream stream, bool printOk)
+    /*async Task<Response> HandleCommandList(ClientStream stream, bool printOk)
     {
         List<Request> requestList = new();
 
@@ -123,5 +111,5 @@ partial class CommandHandler
         }
 
         return totalResponse;
-    }
+    }*/
 }

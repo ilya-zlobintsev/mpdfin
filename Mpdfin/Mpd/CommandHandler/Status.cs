@@ -5,7 +5,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Status()
+    public Response Status()
     {
         Response response = new();
 
@@ -40,7 +40,7 @@ partial class CommandHandler
         return response;
     }
 
-    Response CurrentSong()
+    public Response CurrentSong()
     {
         var currentSong = Player.CurrentSong;
         if (currentSong is not null)
@@ -53,7 +53,7 @@ partial class CommandHandler
         }
     }
 
-    Response Stats()
+    public Response Stats()
     {
         Response response = new();
 
@@ -64,7 +64,7 @@ partial class CommandHandler
         return response;
     }
 
-    async Task<Response> Idle(ClientStream stream, List<string> args)
+    /*async Task<Response> Idle(ClientStream stream, List<string> args)
     {
         var subsystems = args.Count > 0
             ? args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray()
@@ -104,5 +104,5 @@ partial class CommandHandler
         {
             throw new UnreachableException();
         }
-    }
+    }*/
 }

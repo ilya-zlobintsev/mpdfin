@@ -36,20 +36,8 @@ public class Player
         set => MediaPlayer.Volume = value;
     }
 
-    public float? Duration
-    {
-        get
-        {
-            return CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
-        }
-    }
-    public float? Elapsed
-    {
-        get
-        {
-            return Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
-        }
-    }
+    public float? Duration => CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
+    public float? Elapsed => Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
 
     public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
 

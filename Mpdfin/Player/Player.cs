@@ -32,15 +32,8 @@ public class Player
 
     public int Volume
     {
-        get
-        {
-            return MediaPlayer.Volume;
-        }
-        set
-        {
-            MediaPlayer.Volume = value;
-            RaiseEvent(Subsystem.mixer);
-        }
+        get => MediaPlayer.Volume;
+        set => MediaPlayer.Volume = value;
     }
 
     public float? Duration

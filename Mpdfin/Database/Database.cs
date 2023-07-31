@@ -1,32 +1,42 @@
+using System.Data.SqlTypes;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 using Jellyfin.Sdk;
 using MemoryPack;
 using Serilog;
 
-namespace Mpdfin;
+namespace Mpdfin.DB;
 
 class Database
 {
     readonly ItemsClient itemsClient;
     readonly UserViewsClient userViewsClient;
 
-    public List<BaseItemDto> Items = new();
+    readonly DatabaseStorage Storage;
     readonly UserDto CurrentUser;
     readonly SdkClientSettings Settings;
 
     public event EventHandler? OnDatabaseUpdated;
     public event EventHandler? OnUpdate;
 
-    public Database(string serverUrl, AuthenticationResult authenticationResult)
+    public List<BaseItemDto> Items
     {
+        get => Storage.Items;
+        private set => Storage.Items = value;
+    }
+
+    public Database(string serverUrl, DatabaseStorage storage)
+    {
+        Storage = storage;
+
         HttpClient httpClient = new();
 
         var settings = ClientSettings();
         settings.BaseUrl = serverUrl;
-        settings.AccessToken = authenticationResult.AccessToken;
+        settings.AccessToken = storage.AuthenticationResult.AccessToken;
         Settings = settings;
 
-        CurrentUser = authenticationResult.User;
+        CurrentUser = storage.AuthenticationResult.User;
 
         itemsClient = new(settings, httpClient);
         userViewsClient = new(settings, httpClient);
@@ -52,12 +62,14 @@ class Database
     static SdkClientSettings ClientSettings()
     {
         SdkClientSettings settings = new();
-        settings.InitializeClientSettings("dotnet test", "0.0.1", System.Environment.MachineName, "1");
+        settings.InitializeClientSettings("dotnet test", "0.0.1", Environment.MachineName, "1");
         return settings;
     }
 
+    [RequiresUnreferencedCode("Uses reflection-based serialization")]
     public async Task Update()
     {
+        Log.Information("Updating database");
         if (OnUpdate is not null)
         {
             OnUpdate(this, new());
@@ -81,6 +93,8 @@ class Database
 
             Log.Debug($"Loaded {Items.Count} items");
 
+            await Storage.Save();
+
             if (OnUpdate is not null)
             {
                 OnUpdate(this, new());
@@ -98,12 +112,6 @@ class Database
             }
             throw new Exception("Server has no music library configured");
         }
-
-        // var userResponse = await artistsClient.GetArtistsAsync();
-        // Artists = (List<BaseItemDto>)userResponse.Items;
-        // Log.Debug($"Loaded {Artists.Count} artists");
-        // Artists = (List<BaseItemDto>)userResponse.Items;
-        // Log.Debug($"Loaded {Artists.Count} artists");
     }
 
     public Uri GetAudioStreamUri(Guid itemId)

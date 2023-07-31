@@ -1,11 +1,14 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using Mpdfin.Mpd;
+using Mpdfin.DB;
 using Serilog;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mpdfin;
 static class Program
 {
+    [RequiresUnreferencedCode("Uses reflection-based serialization")]
     private static async Task<int> Main()
     {
         using var log = new LoggerConfiguration()
@@ -26,11 +29,21 @@ static class Program
             return 1;
         }
 
-        var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
-        Log.Information($"Logged in as {auth.User.Name}");
+        var storage = DatabaseStorage.Load();
+        if (storage is null)
+        {
+            Log.Information("Database does not exist");
+            var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
+            Log.Information($"Logged in as {auth.User.Name}");
+            storage = new(auth);
+        }
+        else
+        {
+            Log.Information($"Loaded database with {storage.Items.Count} items");
+        }
 
-        Database db = new(config.Jellyfin.ServerUrl, auth);
-        _ = db.Update();
+        Database db = new(config.Jellyfin.ServerUrl, storage);
+        _ = UpdateDb(db);
 
         Player.Player player = new();
         // CommandHandler commandHandler = new(player, db);
@@ -52,6 +65,19 @@ static class Program
         finally
         {
             listener.Stop();
+        }
+    }
+
+    [RequiresUnreferencedCode("Uses reflection-based serialization")]
+    async static Task UpdateDb(Database db)
+    {
+        try
+        {
+            await db.Update();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex.ToString());
         }
     }
 

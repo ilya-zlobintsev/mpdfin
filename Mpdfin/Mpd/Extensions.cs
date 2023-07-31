@@ -1,7 +1,6 @@
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
 using Jellyfin.Sdk;
 using Mpdfin.Player;
+using Mpdfin.DB;
 
 namespace Mpdfin.Mpd;
 

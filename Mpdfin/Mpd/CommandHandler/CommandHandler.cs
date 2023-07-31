@@ -1,4 +1,5 @@
 using Serilog;
+using Mpdfin.DB;
 
 namespace Mpdfin.Mpd;
 

@@ -108,7 +108,7 @@ public class Player
     public void Stop()
     {
         CurrentPos = null;
-        MediaPlayer.Stop();
+        Task.Run(MediaPlayer.Stop);
         RaisePlaybackChanged();
     }
 

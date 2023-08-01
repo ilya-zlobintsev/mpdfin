@@ -1,13 +1,10 @@
-using System.Data.SqlTypes;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Channels;
 using Jellyfin.Sdk;
-using MemoryPack;
 using Serilog;
 
 namespace Mpdfin.DB;
 
-class Database
+public class Database
 {
     readonly ItemsClient itemsClient;
     readonly UserViewsClient userViewsClient;
@@ -23,6 +20,11 @@ class Database
     {
         get => Storage.Items;
         private set => Storage.Items = value;
+    }
+
+    public BaseItemDto? GetItem(Guid id)
+    {
+        return Items.Find(item => item.Id == id);
     }
 
     public Database(string serverUrl, DatabaseStorage storage)

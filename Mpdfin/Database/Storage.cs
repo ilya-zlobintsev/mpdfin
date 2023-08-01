@@ -6,7 +6,7 @@ using Serilog;
 
 namespace Mpdfin.DB;
 
-class DatabaseStorage
+public class DatabaseStorage
 {
     public List<BaseItemDto> Items { get; set; }
     public AuthenticationResult AuthenticationResult { get; set; }

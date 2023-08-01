@@ -1,6 +1,7 @@
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
+using Mpdfin.DB;
 using Serilog;
 
 namespace Mpdfin.Player;
@@ -36,6 +37,23 @@ public class Player
         set => MediaPlayer.Volume = value;
     }
 
+    public PlayerState State
+    {
+        get
+        {
+            return new PlayerState
+            {
+                Volume = Volume,
+                CurrentPos = CurrentPos,
+                Queue = Queue.ConvertAll(song => (song.Id, song.Item.Id)),
+                PlaylistVersion = PlaylistVersion,
+                NextSongId = nextSongId,
+                PlaybackState = PlaybackState,
+                Elapsed = Elapsed,
+            };
+        }
+    }
+
     public float? Duration => CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
     public float? Elapsed => Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
 
@@ -49,6 +67,7 @@ public class Player
         Queue = new();
         PlaylistVersion = 1;
         nextSongId = 0;
+        Volume = 50;
 
         MediaPlayer.Playing += (e, args) => RaisePlaybackChanged();
         MediaPlayer.Stopped += (e, args) => RaisePlaybackChanged();
@@ -58,6 +77,52 @@ public class Player
         MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
         MediaPlayer.EndReached += (_, _) => NextSong();
+    }
+
+    public Player(PlayerState state, Database db) : this()
+    {
+        CurrentPos = state.CurrentPos;
+        Volume = state.Volume;
+
+        try
+        {
+            foreach (var (songId, itemId) in state.Queue)
+            {
+                var item = db.GetItem(itemId) ?? throw new Exception("Item in queue not found in db");
+                var url = db.GetAudioStreamUri(itemId);
+                Add(url, item);
+            }
+            Log.Warning($"Loaded a queue of {state.Queue.Count} items from state");
+
+            PlayCurrent();
+            MediaPlayer.Playing += (_, _) => Log.Debug("Media playing");
+
+            switch (state.PlaybackState)
+            {
+                case VLCState.Playing:
+                    break;
+                case VLCState.Paused:
+                    SetPause(true);
+                    break;
+                default:
+                    Stop();
+                    break;
+            }
+
+            if (state.Elapsed is not null)
+            {
+                void SeekOnce(object? sender, EventArgs? args)
+                {
+                    Task.Run(() => Seek(state.Elapsed!.Value));
+                    MediaPlayer.Playing -= SeekOnce;
+                }
+                MediaPlayer.Playing += SeekOnce;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Could not restore state: {ex}");
+        }
     }
 
     void RaiseEvent(Subsystem subsystem)
@@ -161,11 +226,12 @@ public class Player
 
     public void Seek(double time)
     {
+        Log.Debug($"Seeking to {time}");
         MediaPlayer.SeekTo(TimeSpan.FromSeconds(time));
         RaiseEvent(Subsystem.player);
     }
 
-    public VLCState State => MediaPlayer.State;
+    public VLCState PlaybackState => MediaPlayer.State;
     public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 
     public void SetPause(bool? pause)

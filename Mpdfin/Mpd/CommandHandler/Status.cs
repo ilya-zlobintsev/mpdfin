@@ -28,7 +28,7 @@ partial class CommandHandler
         }
 
         response.Add("volume"u8, Player.Volume.ToU8String());
-        response.Add("state"u8, Player.State switch
+        response.Add("state"u8, Player.PlaybackState switch
         {
             VLCState.Playing => "play"u8,
             VLCState.Paused => "pause"u8,

@@ -37,6 +37,7 @@ public enum Command
     decoders,
     update,
     replay_gain_status,
+    listplaylists,
 
     command_list_begin,
     command_list_ok_begin,

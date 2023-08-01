@@ -72,8 +72,8 @@ partial class CommandHandler
             Command.setvol => SetVol(int.Parse(request.Args[0])),
             Command.volume => Volume(int.Parse(request.Args[0])),
             Command.replay_gain_status => ReplayGainStatus(),
-            Command.add => Add(request.Args[0]),
-            Command.addid => AddId(request.Args[0]),
+            Command.add => Add(request.Args[0], request.Args.ElementAtOrDefault(1)),
+            Command.addid => AddId(request.Args[0], request.Args.ElementAtOrDefault(1)),
             Command.clear => Clear(),
             Command.playlistinfo => PlaylistInfo(),
             Command.plchanges => PlChanges(long.Parse(request.Args[0])),
@@ -86,6 +86,7 @@ partial class CommandHandler
             Command.commands => Commands(),
             Command.decoders => Decoders(),
             Command.update => Update(),
+            Command.listplaylists => ListPlaylists(),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }

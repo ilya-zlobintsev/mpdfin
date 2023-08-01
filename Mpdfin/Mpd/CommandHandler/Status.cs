@@ -23,7 +23,7 @@ partial class CommandHandler
         if (Player.Elapsed is not null)
         {
             response.Add("elapsed"u8, Player.Elapsed.Value.ToU8String());
-            response.Add("time"u8, $"{(int)Player.Elapsed}:{Player.Duration}");
+            response.Add("time"u8, $"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}");
             response.Add("duration"u8, Player.Duration!.Value.ToU8String());
         }
 

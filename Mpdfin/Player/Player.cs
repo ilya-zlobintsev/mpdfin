@@ -168,10 +168,23 @@ public class Player
     /// <summary>
     /// Adds a song to queue an returns the id
     /// </summary>
-    public int Add(Uri url, BaseItemDto item)
+    public int Add(Uri url, BaseItemDto item, int? pos = null)
     {
         Song song = new(url, item, nextSongId);
-        Queue.Add(song);
+
+        if (pos is not null)
+        {
+            Queue.Insert(pos.Value, song);
+            if (pos >= CurrentPos)
+            {
+                CurrentPos++;
+            }
+        }
+        else
+        {
+            Queue.Add(song);
+        }
+
         PlaylistVersion++;
         nextSongId++;
         RaiseEvent(Subsystem.playlist);
@@ -216,11 +229,6 @@ public class Player
             Log.Debug("Switching to previous item");
             CurrentPos -= 1;
             PlayCurrent();
-        }
-        else
-        {
-            Log.Debug("Start of playlist reached");
-            Stop();
         }
     }
 

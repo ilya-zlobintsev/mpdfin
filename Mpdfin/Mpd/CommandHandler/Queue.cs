@@ -2,21 +2,32 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Add(string uri)
+    Response Add(string uri, string? pos)
     {
-        AddId(uri);
+        AddId(uri, pos);
         return new();
     }
 
-    Response AddId(string uri)
+    Response AddId(string uri, string? pos)
     {
+        int? parsedPos = null;
+        if (pos is not null)
+        {
+            parsedPos = pos[0] switch
+            {
+                '+' => Player.CurrentPos + int.Parse(pos[1..]),
+                '-' => Player.CurrentPos - int.Parse(pos[1..]),
+                _ => int.Parse(pos),
+            };
+        }
+
         var guid = Guid.Parse(uri);
         var item = Db.Items.Find(item => item.Id == guid);
 
         if (item is not null)
         {
             var url = Db.GetAudioStreamUri(item.Id);
-            var queueId = Player.Add(url, item);
+            var queueId = Player.Add(url, item, parsedPos);
             return new("Id"u8, queueId.ToString());
         }
         else

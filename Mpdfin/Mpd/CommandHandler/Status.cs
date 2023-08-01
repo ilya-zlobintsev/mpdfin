@@ -37,6 +37,9 @@ partial class CommandHandler
         response.Add("playlist"u8, Player.PlaylistVersion.ToU8String());
         response.Add("playlistlength"u8, Player.Queue.Count.ToU8String());
 
+        if (Updating)
+            response.Add("updating_db"u8, UpdateJobId.ToU8String());
+
         return response;
     }
 

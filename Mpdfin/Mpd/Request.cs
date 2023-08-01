@@ -35,6 +35,7 @@ public enum Command
     stats,
     commands,
     decoders,
+    update,
     replay_gain_status,
 
     command_list_begin,

@@ -1,5 +1,6 @@
 using Serilog;
 using Mpdfin.DB;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mpdfin.Mpd;
 
@@ -8,6 +9,9 @@ partial class CommandHandler
     readonly Player.Player Player;
     readonly Database Db;
     public readonly ClientNotificationsReceiver NotificationsReceiver;
+
+    int UpdateJobId;
+    bool Updating;
 
     public CommandHandler(Player.Player player, Database db)
     {
@@ -20,6 +24,7 @@ partial class CommandHandler
         Db.OnDatabaseUpdated += (e, args) => NotificationsReceiver.SendEvent(Subsystem.database);
     }
 
+    [RequiresUnreferencedCode("DB")]
     public async Task HandleStream(ClientStream stream)
     {
         Request? request;
@@ -42,6 +47,7 @@ partial class CommandHandler
         }
     }
 
+    [RequiresUnreferencedCode("DB")]
     async Task<Response?> HandleRequest(Request request, ClientStream stream)
     {
         return request.Command switch
@@ -79,10 +85,12 @@ partial class CommandHandler
             Command.stats => Stats(),
             Command.commands => Commands(),
             Command.decoders => Decoders(),
+            Command.update => Update(),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }
 
+    [RequiresUnreferencedCode("DB")]
     async Task<Response> HandleCommandList(ClientStream stream, bool printOk)
     {
         List<Request> requestList = new();

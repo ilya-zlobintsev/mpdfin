@@ -1,3 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
+using Serilog;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
@@ -84,5 +87,30 @@ partial class CommandHandler
         }
 
         return response;
+    }
+
+    [RequiresUnreferencedCode("DB")]
+    Response Update()
+    {
+        UpdateJobId++;
+        Updating = true;
+
+        new Task(async () =>
+        {
+            try
+            {
+                await Db.Update();
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"Could not update db: {ex}");
+            }
+            finally
+            {
+                Updating = false;
+            }
+        }).Start();
+
+        return new("updating_db"u8, UpdateJobId.ToU8String());
     }
 }

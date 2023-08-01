@@ -22,7 +22,7 @@ public class PlayerState
     public int NextSongId;
     public double? Elapsed;
 
-    public static PlayerState Load()
+    public static PlayerState? Load()
     {
         var filePath = FilePath();
 
@@ -35,7 +35,7 @@ public class PlayerState
         {
             if (ex is not FileNotFoundException && ex is not DirectoryNotFoundException)
                 Log.Error($"Could not load state: {ex}");
-            return new();
+            return null;
         }
     }
 

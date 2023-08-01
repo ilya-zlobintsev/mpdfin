@@ -57,11 +57,20 @@ static class Program
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }
 
-        var state = PlayerState.Load();
-        Player.Player player = new(state, db);
-        player.OnSubsystemUpdate += async (_, _) => await player.State.Save();
+        Player.Player player;
 
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
+        var state = PlayerState.Load();
+        if (state is not null)
+        {
+            player = new(state, db);
+        }
+        else
+        {
+            player = new();
+        }
+
+        player.OnSubsystemUpdate += async (_, _) => await player.State.Save();
+        AppDomain.CurrentDomain.ProcessExit += async (_, _) => await player.State.Save();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 
         IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);

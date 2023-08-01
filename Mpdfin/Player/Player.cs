@@ -92,7 +92,7 @@ public class Player
                 var url = db.GetAudioStreamUri(itemId);
                 Add(url, item);
             }
-            Log.Warning($"Loaded a queue of {state.Queue.Count} items from state");
+            Log.Debug($"Loaded a queue of {state.Queue.Count} items from state");
 
             PlayCurrent();
             MediaPlayer.Playing += (_, _) => Log.Debug("Media playing");

@@ -1,13 +1,24 @@
+using System.Numerics;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Play(int pos)
+    Response Play(string? posArg)
     {
-        if (pos >= Player.Queue.Count)
-            throw new FileNotFoundException("Invalid song index");
+        if (posArg is not null)
+        {
+            var pos = int.Parse(posArg);
 
-        Player.SetCurrent(pos);
+            if (pos >= Player.Queue.Count)
+                throw new FileNotFoundException("Invalid song index");
+
+            Player.SetCurrent(pos);
+        }
+        else
+        {
+            Player.SetPause(false);
+        }
 
         return new();
     }

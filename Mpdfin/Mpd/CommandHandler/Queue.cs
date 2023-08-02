@@ -4,11 +4,20 @@ partial class CommandHandler
 {
     Response Add(string uri, string? pos)
     {
-        AddId(uri, pos);
+        if (uri.Length == 0)
+        {
+            var items = Db.Items.OrderItems().Select(item => (item, Db.GetAudioStreamUri(item.Id))).ToArray();
+            Player.AddMany(items);
+        }
+        else
+        {
+            AddId(Guid.Parse(uri), pos);
+        }
+
         return new();
     }
 
-    Response AddId(string uri, string? pos)
+    Response AddId(Guid uri, string? pos)
     {
         int? parsedPos = null;
         if (pos is not null)
@@ -21,8 +30,7 @@ partial class CommandHandler
             };
         }
 
-        var guid = Guid.Parse(uri);
-        var item = Db.Items.Find(item => item.Id == guid);
+        var item = Db.Items.Find(item => item.Id == uri);
 
         if (item is not null)
         {

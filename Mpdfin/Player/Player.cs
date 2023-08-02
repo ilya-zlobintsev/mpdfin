@@ -76,7 +76,7 @@ public class Player
         MediaPlayer.Muted += (e, args) => RaiseEvent(Subsystem.mixer);
         MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
-        MediaPlayer.EndReached += (_, _) => NextSong();
+        MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
     }
 
     public Player(PlayerState state, Database db) : this()
@@ -145,6 +145,7 @@ public class Player
         {
             var song = Queue[CurrentPos.Value];
             Media media = new(libVLC, song.Uri);
+            Log.Debug("playing...");
             MediaPlayer.Play(media);
         }
         RaiseEvent(Subsystem.player);
@@ -170,6 +171,27 @@ public class Player
     /// </summary>
     public int Add(Uri url, BaseItemDto item, int? pos = null)
     {
+
+        var id = AddItem(url, item, pos);
+        RaiseEvent(Subsystem.playlist);
+        return id;
+    }
+
+    public void AddMany((BaseItemDto, Uri)[] items, int? pos = null)
+    {
+        foreach (var (item, url) in items)
+        {
+            AddItem(url, item, pos);
+            if (pos is not null)
+            {
+                pos++;
+            }
+        }
+        RaiseEvent(Subsystem.playlist);
+    }
+
+    int AddItem(Uri url, BaseItemDto item, int? pos = null)
+    {
         Song song = new(url, item, nextSongId);
 
         if (pos is not null)
@@ -187,7 +209,6 @@ public class Player
 
         PlaylistVersion++;
         nextSongId++;
-        RaiseEvent(Subsystem.playlist);
         return song.Id;
     }
 

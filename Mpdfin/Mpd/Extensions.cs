@@ -87,6 +87,6 @@ static class Extensions
 
     public static IOrderedEnumerable<BaseItemDto> OrderItems(this IEnumerable<BaseItemDto> items)
     {
-        return items.OrderBy(item => (item.IndexNumber, item.PremiereDate, item.Name));
+        return items.OrderBy(item => (item.AlbumArtist, item.Artists.ElementAtOrDefault(0), item.Album, item.IndexNumber, item.PremiereDate, item.Name));
     }
 }

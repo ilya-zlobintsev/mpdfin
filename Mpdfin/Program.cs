@@ -93,6 +93,7 @@ static class Program
         }
     }
 
+    [RequiresUnreferencedCode("DB")]
     async static Task HandleStream(TcpClient client, Player.Player player, Database db)
     {
         try

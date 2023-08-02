@@ -77,4 +77,33 @@ partial class CommandHandler
         Player.ClearQueue();
         return new();
     }
+
+    Response Shuffle(string? range)
+    {
+        int start;
+        int end;
+
+        if (range is not null)
+        {
+            var items = range.Split(':', 2);
+            try
+            {
+                start = int.Parse(items[0]);
+                end = int.Parse(items[1]);
+            }
+            catch
+            {
+                throw new Exception($"Invalid range {range}");
+            }
+        }
+        else
+        {
+            start = 0;
+            end = Player.Queue.Count - 1;
+        }
+
+        Player.ShuffleQueue(start, end);
+
+        return new();
+    }
 }

@@ -36,6 +36,7 @@ public enum Command
     commands,
     decoders,
     update,
+    shuffle,
     replay_gain_status,
     listplaylists,
 

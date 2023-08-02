@@ -11,7 +11,7 @@ public class Player
     readonly LibVLC libVLC;
     readonly MediaPlayer MediaPlayer;
 
-    public List<Song> Queue { get; }
+    public List<Song> Queue { get; private set; }
     int nextSongId;
     public int PlaylistVersion;
 
@@ -145,7 +145,6 @@ public class Player
         {
             var song = Queue[CurrentPos.Value];
             Media media = new(libVLC, song.Uri);
-            Log.Debug("playing...");
             MediaPlayer.Play(media);
         }
         RaiseEvent(Subsystem.player);
@@ -273,6 +272,20 @@ public class Player
         {
             MediaPlayer.Pause();
         }
+    }
+
+    public void ShuffleQueue(int start, int end)
+    {
+        int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
+
+        Random rnd = new();
+        Queue = Queue[start..end].OrderBy(_ => rnd.Next()).ToList();
+
+        if (currentId is not null)
+            CurrentPos = Queue.FindIndex(item => item.Id == currentId);
+
+        PlaylistVersion++;
+        RaiseEvent(Subsystem.playlist);
     }
 
     void RaisePlaybackChanged()

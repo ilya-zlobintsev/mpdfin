@@ -87,6 +87,7 @@ partial class CommandHandler
             Command.decoders => Decoders(),
             Command.update => Update(),
             Command.listplaylists => ListPlaylists(),
+            Command.shuffle => Shuffle(request.Args.FirstOrDefault()),
             _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }

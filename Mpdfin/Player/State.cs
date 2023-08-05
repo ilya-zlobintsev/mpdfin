@@ -19,6 +19,8 @@ public class PlayerState
     public int PlaylistVersion;
     public VLCState PlaybackState;
     public List<(int, Guid)> Queue = new();
+    public List<(int, Guid)> RandomQueue = new();
+    public bool Random;
     public int NextSongId;
     public double? Elapsed;
 

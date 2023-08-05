@@ -10,14 +10,22 @@ partial class CommandHandler
         Response response = new();
 
         response.Add("repeat"u8, "0"u8);
-        response.Add("random"u8, "0"u8);
+        response.Add("random"u8, Convert.ToUInt32(Player.Random).ToU8String());
         response.Add("single"u8, "0"u8);
         response.Add("consume"u8, "0"u8);
 
-        if (Player.CurrentPos is not null)
+        if (Player.QueuePos is not null)
         {
-            response.Add("song"u8, Player.CurrentPos.Value.ToU8String());
+            response.Add("song"u8, Player.QueuePos.Value.ToU8String());
             response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToU8String());
+        }
+
+        var nextSong = Player.QueueNext;
+        if (nextSong is not null)
+        {
+            var (pos, song) = nextSong.Value;
+            response.Add("nextsong"u8, pos.ToU8String());
+            response.Add("nextsongid"u8, song.Id.ToU8String());
         }
 
         if (Player.Elapsed is not null)
@@ -48,7 +56,7 @@ partial class CommandHandler
         var currentSong = Player.CurrentSong;
         if (currentSong is not null)
         {
-            return currentSong.Value.GetResponse(Player.CurrentPos);
+            return currentSong.Value.GetResponse(Player.QueuePos);
         }
         else
         {

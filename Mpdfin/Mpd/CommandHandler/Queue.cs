@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
@@ -24,8 +26,8 @@ partial class CommandHandler
         {
             parsedPos = pos[0] switch
             {
-                '+' => Player.CurrentPos + int.Parse(pos[1..]),
-                '-' => Player.CurrentPos - int.Parse(pos[1..]),
+                '+' => Player.QueuePos + int.Parse(pos[1..]),
+                '-' => Player.QueuePos - int.Parse(pos[1..]),
                 _ => int.Parse(pos),
             };
         }
@@ -104,6 +106,12 @@ partial class CommandHandler
 
         Player.ShuffleQueue(start, end);
 
+        return new();
+    }
+
+    Response Random(int random)
+    {
+        Player.Random = random == 1;
         return new();
     }
 }

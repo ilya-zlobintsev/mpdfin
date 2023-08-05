@@ -68,6 +68,7 @@ partial class CommandHandler
             Command.seekcur => SeekCur(double.Parse(request.Args[0])),
             Command.next => Next(),
             Command.previous => Previous(),
+            Command.random => Random(int.Parse(request.Args[0])),
             Command.getvol => GetVol(),
             Command.setvol => SetVol(int.Parse(request.Args[0])),
             Command.volume => Volume(int.Parse(request.Args[0])),

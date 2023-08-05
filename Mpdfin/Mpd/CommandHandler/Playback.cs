@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
@@ -13,7 +11,7 @@ partial class CommandHandler
             if (pos >= Player.Queue.Count)
                 throw new FileNotFoundException("Invalid song index");
 
-            Player.SetCurrent(pos);
+            Player.SetCurrentPosition(pos);
         }
         else
         {
@@ -25,13 +23,7 @@ partial class CommandHandler
 
     Response PlayId(int id)
     {
-        var index = Player.Queue.FindIndex(song => song.Id == id);
-
-        if (index == -1)
-            throw new FileNotFoundException($"Song with id {id} not found in the database");
-
-        Player.SetCurrent(index);
-
+        Player.SetCurrentId(id);
         return new();
     }
 
@@ -69,9 +61,9 @@ partial class CommandHandler
 
     Response Seek(int songPos, double time)
     {
-        if (Player.CurrentPos != songPos)
+        if (Player.QueuePos != songPos)
         {
-            Player.SetCurrent(songPos);
+            Player.SetCurrentPosition(songPos);
         }
         return SeekCur(time);
     }

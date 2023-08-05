@@ -23,6 +23,7 @@ public enum Command
     add,
     addid,
     clear,
+    random,
     playlistinfo,
     plchanges,
     find,

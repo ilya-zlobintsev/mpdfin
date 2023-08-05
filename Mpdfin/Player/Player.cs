@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
@@ -278,8 +279,8 @@ public class Player
     {
         int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
 
-        Random rnd = new();
-        Queue = Queue[start..end].OrderBy(_ => rnd.Next()).ToList();
+        var span = CollectionsMarshal.AsSpan(Queue)[start..end];
+        Random.Shared.Shuffle(span);
 
         if (currentId is not null)
             CurrentPos = Queue.FindIndex(item => item.Id == currentId);

@@ -10,6 +10,7 @@
     <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
+    <!-- <NoWarn>IL2026</NoWarn> -->
   </PropertyGroup>
 
   <ItemGroup>

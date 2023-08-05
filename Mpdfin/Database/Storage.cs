@@ -24,7 +24,7 @@ public class DatabaseStorage
         AuthenticationResult = authenticationResult;
     }
 
-    [RequiresUnreferencedCode("Uses reflection-based serialization")]
+    [RequiresUnreferencedCode("Serialization")]
     public static DatabaseStorage? Load()
     {
         var filePath = FilePath();
@@ -43,7 +43,7 @@ public class DatabaseStorage
         }
     }
 
-    [RequiresUnreferencedCode("Uses reflection-based serialization")]
+    [RequiresUnreferencedCode("Serialization")]
     public async Task Save()
     {
         Directory.CreateDirectory(DataDir());

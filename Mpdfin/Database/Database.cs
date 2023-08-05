@@ -8,6 +8,7 @@ public class Database
 {
     readonly ItemsClient itemsClient;
     readonly UserViewsClient userViewsClient;
+    readonly PlaystateClient playstateClient;
 
     readonly DatabaseStorage Storage;
     readonly UserDto CurrentUser;
@@ -42,6 +43,7 @@ public class Database
 
         itemsClient = new(settings, httpClient);
         userViewsClient = new(settings, httpClient);
+        playstateClient = new(settings, httpClient);
     }
 
     public static Task<AuthenticationResult> Authenticate(string serverUrl, string username, string password)
@@ -68,7 +70,7 @@ public class Database
         return settings;
     }
 
-    [RequiresUnreferencedCode("Uses reflection-based serialization")]
+    [RequiresUnreferencedCode("Serialization")]
     public async Task Update()
     {
         Log.Information("Updating database");

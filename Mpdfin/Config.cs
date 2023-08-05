@@ -14,11 +14,15 @@ record Config
 {
     public required JellyfinConfig Jellyfin { get; init; }
 
-    public static Config Load()
+    public static string GetPath()
     {
         var configDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var configFilePath = Path.Join(configDir, "mpdfin", "config.json");
+        return Path.Join(configDir, "mpdfin", "config.json");
+    }
 
+    public static Config Load()
+    {
+        var configFilePath = GetPath();
         var contents = File.ReadAllText(configFilePath);
         return JsonSerializer.Deserialize(contents, SourceGenerationContext.Default.Config)!;
     }

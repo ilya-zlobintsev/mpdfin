@@ -9,7 +9,7 @@ using Mpdfin.Player;
 namespace Mpdfin;
 static class Program
 {
-    [RequiresUnreferencedCode("Uses reflection-based serialization")]
+    [RequiresUnreferencedCode("Serialization")]
     private static async Task<int> Main()
     {
         using var log = new LoggerConfiguration()
@@ -24,9 +24,9 @@ static class Program
             config = Config.Load();
             Log.Debug($"Loaded config {config}");
         }
-        catch (FileNotFoundException e)
+        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
         {
-            Log.Error($"Could not load config file from {e.FileName}");
+            Log.Error($"Could not load config file: {e.Message}");
             return 1;
         }
 
@@ -69,8 +69,8 @@ static class Program
             player = new();
         }
 
-        player.OnSubsystemUpdate += async (_, _) => await player.State.Save();
-        AppDomain.CurrentDomain.ProcessExit += async (_, _) => await player.State.Save();
+        player.OnSubsystemUpdate += (_, _) => _ = player.State.Save();
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 
         IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);
@@ -93,7 +93,7 @@ static class Program
         }
     }
 
-    [RequiresUnreferencedCode("DB")]
+    [RequiresUnreferencedCode("Serialization")]
     async static Task HandleStream(TcpClient client, Player.Player player, Database db)
     {
         try

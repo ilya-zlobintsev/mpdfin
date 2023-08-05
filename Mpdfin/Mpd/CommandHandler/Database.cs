@@ -89,7 +89,7 @@ partial class CommandHandler
         return response;
     }
 
-    [RequiresUnreferencedCode("DB")]
+    [RequiresUnreferencedCode("Serialization")]
     Response Update()
     {
         UpdateJobId++;

@@ -111,7 +111,13 @@ public class Player
     public int Volume
     {
         get => MediaPlayer.Volume;
-        set => MediaPlayer.Volume = value;
+        set
+        {
+            lock (MediaPlayer)
+            {
+                MediaPlayer.Volume = value;
+            }
+        }
     }
 
     public PlayerState State
@@ -140,8 +146,15 @@ public class Player
 
     public Player()
     {
-        libVLC = new();
-        MediaPlayer = new(libVLC);
+
+        var init = Task.Run(() =>
+        {
+            LibVLC libVLC = new();
+            MediaPlayer mediaPlayer = new(libVLC);
+            return (libVLC, mediaPlayer);
+        });
+        init.Wait();
+        (libVLC, MediaPlayer) = init.Result;
 
         Queue = new();
         RandomQueue = new();
@@ -149,13 +162,14 @@ public class Player
         nextSongId = 0;
         Volume = 50;
 
-        MediaPlayer.Playing += (e, args) => RaisePlaybackChanged();
-        MediaPlayer.Stopped += (e, args) => RaisePlaybackChanged();
-        MediaPlayer.Paused += (e, args) => RaisePlaybackChanged();
+        MediaPlayer.Playing += (e, args) => PlaybackChanged();
+        MediaPlayer.Stopped += (e, args) => PlaybackChanged();
+        MediaPlayer.Paused += (e, args) => PlaybackChanged();
         MediaPlayer.VolumeChanged += (e, args) => RaiseEvent(Subsystem.mixer);
         MediaPlayer.Muted += (e, args) => RaiseEvent(Subsystem.mixer);
         MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
+        MediaPlayer.EncounteredError += (_, _) => Task.Run(Stop);
         MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
     }
 
@@ -226,8 +240,14 @@ public class Player
         if (CurrentPos < ActiveQueue.Count)
         {
             var song = ActiveQueue[CurrentPos.Value];
-            Media media = new(libVLC, song.Uri);
-            MediaPlayer.Play(media);
+            Task.Run(() =>
+            {
+                lock (MediaPlayer)
+                {
+                    Media media = new(libVLC, song.Uri);
+                    MediaPlayer.Play(media);
+                }
+            });
         }
         RaiseEvent(Subsystem.player);
         RaiseEvent(Subsystem.mixer);
@@ -236,8 +256,14 @@ public class Player
     public void Stop()
     {
         CurrentPos = null;
-        Task.Run(MediaPlayer.Stop);
-        RaisePlaybackChanged();
+        Task.Run(() =>
+        {
+            lock (MediaPlayer)
+            {
+                MediaPlayer.Stop();
+            }
+        });
+        PlaybackChanged();
     }
 
     public void ClearQueue()
@@ -333,6 +359,7 @@ public class Player
     {
         if (CurrentPos is null)
         {
+            Stop();
             throw new Exception("Not currently playing");
         }
 
@@ -347,23 +374,30 @@ public class Player
     public void Seek(double time)
     {
         Log.Debug($"Seeking to {time}");
-        MediaPlayer.SeekTo(TimeSpan.FromSeconds(time));
+        lock (MediaPlayer)
+        {
+            MediaPlayer.SeekTo(TimeSpan.FromSeconds(time));
+        }
         RaiseEvent(Subsystem.player);
     }
 
-    public VLCState PlaybackState => MediaPlayer.State;
+    public VLCState PlaybackState { get; private set; }
     public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 
     public void SetPause(bool? pause)
     {
-        if (pause is not null)
+        lock (MediaPlayer)
         {
-            MediaPlayer.SetPause(pause.Value);
+            if (pause is not null)
+            {
+                MediaPlayer.SetPause(pause.Value);
+            }
+            else
+            {
+                MediaPlayer.Pause();
+            }
         }
-        else
-        {
-            MediaPlayer.Pause();
-        }
+
     }
 
     public void ShuffleQueue(int start, int end)
@@ -380,8 +414,12 @@ public class Player
         RaiseEvent(Subsystem.playlist);
     }
 
-    void RaisePlaybackChanged()
+    void PlaybackChanged()
     {
+        Task.Run(() =>
+        {
+            PlaybackState = MediaPlayer.State;
+        });
         RaiseEvent(Subsystem.player);
         RaiseEvent(Subsystem.mixer);
     }

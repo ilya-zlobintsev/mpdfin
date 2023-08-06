@@ -6,7 +6,7 @@ namespace Mpdfin.Mpd;
 
 readonly record struct Response
 {
-    ArrayBufferWriter<byte> Contents { get; init; }
+    public ArrayBufferWriter<byte> Contents { get; init; }
 
     [SetsRequiredMembers]
     public Response() => Contents = new();

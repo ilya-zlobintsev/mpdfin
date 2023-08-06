@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Net.Sockets;
 using System.Text;
 using Serilog;
@@ -30,14 +31,13 @@ class ClientStream
 
     public async Task WriteResponse(Response response)
     {
-        var memory = response.GetMemory();
-        if (!memory.IsEmpty)
+        if (!response.Contents.WrittenMemory.IsEmpty)
             Log.Debug($"Writing response {response}");
         else
             Log.Debug("Writing empty response");
 
-        await Write(memory);
-        await Write(OK);
+        response.Contents.Write(OK.Span);
+        await Write(response.Contents.WrittenMemory);
     }
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")

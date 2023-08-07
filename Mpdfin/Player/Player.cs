@@ -41,8 +41,7 @@ public class Player
             {
                 if (value)
                 {
-                    Random rng = new();
-                    RandomQueue = Queue.OrderBy(_ => rng.Next()).ToList();
+                    RandomQueue = Queue.OrderBy(_ => System.Random.Shared.Next()).ToList();
                     CurrentPos = 0;
                 }
                 else
@@ -59,7 +58,7 @@ public class Player
         }
     }
 
-    int? CurrentPos { get; set; }
+    int? CurrentPos;
     public int? QueuePos
     {
         get
@@ -147,14 +146,8 @@ public class Player
     public Player()
     {
 
-        var init = Task.Run(() =>
-        {
-            LibVLC libVLC = new();
-            MediaPlayer mediaPlayer = new(libVLC);
-            return (libVLC, mediaPlayer);
-        });
-        init.Wait();
-        (libVLC, MediaPlayer) = init.Result;
+        libVLC = new();
+        MediaPlayer = new(libVLC);
 
         Queue = new();
         RandomQueue = new();
@@ -175,20 +168,26 @@ public class Player
 
     public Player(PlayerState state, Database db) : this()
     {
-        Random = state.Random;
+        _random = state.Random;
         CurrentPos = state.CurrentPos;
         Volume = state.Volume;
+        PlaylistVersion = state.PlaylistVersion;
+        nextSongId = state.NextSongId;
 
         try
         {
-            foreach (var (songId, itemId) in state.Queue)
+            Song ParseStoredItem((int, Guid) storedItem)
             {
-                var item = db.GetItem(itemId) ?? throw new Exception("Item in queue not found in db");
-                var url = db.GetAudioStreamUri(itemId);
-                AddItem(url, item);
+
+                var item = db.GetItem(storedItem.Item2) ?? throw new Exception("Item in state not found in db");
+                var url = db.GetAudioStreamUri(item.Id);
+                return new Song(url, item, storedItem.Item1);
             }
 
-            Log.Debug($"Loaded a queue of {state.Queue.Count} items from state");
+            Queue = state.Queue.Select(ParseStoredItem).ToList();
+            RandomQueue = state.RandomQueue.Select(ParseStoredItem).ToList();
+
+            Log.Debug($"Loaded a queue of {Queue.Count} (randomized: {RandomQueue.Count}) items from state");
 
             PlayCurrent();
             MediaPlayer.Playing += (_, _) => Log.Debug("Media playing");
@@ -245,7 +244,9 @@ public class Player
                 lock (MediaPlayer)
                 {
                     Media media = new(libVLC, song.Uri);
-                    MediaPlayer.Play(media);
+                    Log.Debug("playing media");
+                    var result = MediaPlayer.Play(media);
+                    Log.Debug($"playback result: {result}");
                 }
             });
         }

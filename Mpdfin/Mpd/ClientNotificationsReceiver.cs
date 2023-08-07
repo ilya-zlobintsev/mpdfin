@@ -36,8 +36,6 @@ readonly struct ClientNotificationsReceiver
     {
         subsystems ??= AllSubsystems;
 
-        Log.Debug($"Subscribing to events {subsystems}");
-
         var listeners = Listeners;
         var subsystemEvents = new List<Subsystem>(subsystems.Length);
 
@@ -62,8 +60,6 @@ readonly struct ClientNotificationsReceiver
 
         var finishedTask = await Task.WhenAny(tasks);
         subsystemEvents.Add(finishedTask.Result);
-
-        Log.Debug($"Consumed event `{finishedTask.Result}` on client");
 
         return subsystemEvents;
     }

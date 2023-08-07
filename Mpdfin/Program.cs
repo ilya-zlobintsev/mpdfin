@@ -57,17 +57,18 @@ static class Program
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }
 
-        Player.Player player;
-
         var state = PlayerState.Load();
-        if (state is not null)
+        var player = await Task.Run(() =>
         {
-            player = new(state, db);
-        }
-        else
-        {
-            player = new();
-        }
+            if (state is not null)
+            {
+                return new Player.Player(state, db);
+            }
+            else
+            {
+                return new Player.Player();
+            }
+        });
 
         player.OnSubsystemUpdate += (_, _) => _ = player.State.Save();
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();

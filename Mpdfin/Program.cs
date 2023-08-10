@@ -70,7 +70,15 @@ static class Program
             }
         });
 
-        player.OnSubsystemUpdate += (_, _) => _ = player.State.Save();
+        var lastStateUpdate = DateTime.MinValue;
+        player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>
+        {
+            if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
+            {
+                await player.State.Save();
+                lastStateUpdate = DateTime.UtcNow;
+            }
+        });
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 

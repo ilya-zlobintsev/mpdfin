@@ -24,10 +24,10 @@ static class Program
             config = Config.Load();
             Log.Debug($"Loaded config {config}");
         }
-        catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+        catch (Exception e)
         {
             Log.Error($"Could not load config file: {e.Message}");
-            return 1;
+            throw;
         }
 
         Database db;

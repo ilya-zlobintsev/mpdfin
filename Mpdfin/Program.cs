@@ -5,6 +5,7 @@ using Mpdfin.DB;
 using Serilog;
 using System.Diagnostics.CodeAnalysis;
 using Mpdfin.Player;
+using Serilog.Events;
 
 namespace Mpdfin;
 static class Program
@@ -12,23 +13,23 @@ static class Program
     [RequiresUnreferencedCode("Serialization")]
     private static async Task<int> Main()
     {
-        using var log = new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .WriteTo.Console(outputTemplate: "[{Level:u}] {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
-        Log.Logger = log;
 
         Config config;
         try
         {
             config = Config.Load();
-            Log.Debug($"Loaded config {config}");
         }
         catch (Exception e)
         {
-            Log.Error($"Could not load config file: {e.Message}");
+            Console.WriteLine($"Could not load config file: {e.Message}");
             throw;
         }
+
+        using var log = new LoggerConfiguration()
+            .MinimumLevel.Is(config.LogLevel ?? LogEventLevel.Information)
+            .WriteTo.Console(outputTemplate: "[{Level:u}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+        Log.Logger = log;
 
         Database db;
 
@@ -82,7 +83,7 @@ static class Program
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 
-        IPEndPoint ipEndPoint = new(IPAddress.Any, 6601);
+        IPEndPoint ipEndPoint = new(IPAddress.Any, config.Port ?? 6600);
         TcpListener listener = new(ipEndPoint);
 
         try

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Serilog.Events;
 
 namespace Mpdfin;
 
@@ -13,6 +14,9 @@ internal partial class SourceGenerationContext : JsonSerializerContext
 record Config
 {
     public required JellyfinConfig Jellyfin { get; init; }
+    [JsonConverter(typeof(JsonStringEnumConverter<LogEventLevel>))]
+    public LogEventLevel? LogLevel;
+    public int? Port;
 
     public static string GetPath()
     {

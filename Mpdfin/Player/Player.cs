@@ -187,7 +187,7 @@ public class Player
             Queue = state.Queue.Select(ParseStoredItem).ToList();
             RandomQueue = state.RandomQueue.Select(ParseStoredItem).ToList();
 
-            Log.Debug($"Loaded a queue of {Queue.Count} (randomized: {RandomQueue.Count}) items from state");
+            Log.Information($"Loaded a queue of {Queue.Count} (randomized: {RandomQueue.Count}) items from state");
 
             PlayCurrent();
             MediaPlayer.Playing += (_, _) => Log.Debug("Media playing");
@@ -244,9 +244,7 @@ public class Player
                 lock (MediaPlayer)
                 {
                     Media media = new(libVLC, song.Uri);
-                    Log.Debug("playing media");
                     var result = MediaPlayer.Play(media);
-                    Log.Debug($"playback result: {result}");
                 }
             });
         }

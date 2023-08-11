@@ -6,7 +6,7 @@ using Serilog;
 
 namespace Mpdfin.Player;
 
-[JsonSourceGenerationOptions(WriteIndented = true, IncludeFields = true)]
+[JsonSourceGenerationOptions(IncludeFields = true)]
 [JsonSerializable(typeof(PlayerState))]
 internal partial class PlayerStateContext : JsonSerializerContext
 {

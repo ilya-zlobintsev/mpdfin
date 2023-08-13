@@ -147,6 +147,7 @@ public class Player
     {
 
         libVLC = new();
+        libVLC.SetUserAgent("Mpdfin", "Mpdfin client");
         MediaPlayer = new(libVLC);
 
         Queue = new();
@@ -162,7 +163,7 @@ public class Player
         MediaPlayer.Muted += (e, args) => RaiseEvent(Subsystem.mixer);
         MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
-        MediaPlayer.EncounteredError += (_, _) => Task.Run(Stop);
+        MediaPlayer.EncounteredError += (_, _) => Task.Run(NextSong);
         MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
     }
 

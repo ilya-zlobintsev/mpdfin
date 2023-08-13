@@ -6,6 +6,7 @@ using Serilog;
 using System.Diagnostics.CodeAnalysis;
 using Mpdfin.Player;
 using Serilog.Events;
+using Jellyfin.Sdk;
 
 namespace Mpdfin;
 static class Program
@@ -31,16 +32,18 @@ static class Program
         Log.Logger = log;
 
         Database db;
+        JellyfinClient client;
 
         var storage = DatabaseStorage.Load();
         if (storage is null)
         {
             Log.Information("Database does not exist");
-            var auth = await Database.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
+            var auth = await JellyfinClient.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
             Log.Information($"Logged in as {auth.User.Name}");
-            storage = new(auth);
 
-            db = new(config.Jellyfin.ServerUrl, storage);
+            storage = new(auth);
+            client = new(config.Jellyfin.ServerUrl, auth);
+            db = new(client, storage);
 
             try
             {
@@ -53,22 +56,35 @@ static class Program
         }
         else
         {
-            db = new(config.Jellyfin.ServerUrl, storage);
+            client = new(config.Jellyfin.ServerUrl, storage.AuthenticationResult);
+            db = new(client, storage);
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }
 
-        var state = PlayerState.Load();
-        var player = await Task.Run(() =>
+        Player.Player player = new();
+
+        player.OnPlaybackStarted += async (_, _) =>
         {
-            if (state is not null)
+            Log.Debug("Playback started");
+            var currentSong = player.CurrentSong;
+            if (currentSong is not null)
             {
-                return new Player.Player(state, db);
+                PlaybackStartInfo info = new()
+                {
+                    ItemId = player.CurrentSong!.Value.Item.Id
+                };
+
+                await client.PlaystateClient.ReportPlaybackStartAsync(info);
+                Log.Debug("Reported playback start");
             }
-            else
-            {
-                return new Player.Player();
-            }
-        });
+        };
+
+        var state = PlayerState.Load();
+        if (state is not null)
+        {
+            player.LoadState(state, db);
+        }
+
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>

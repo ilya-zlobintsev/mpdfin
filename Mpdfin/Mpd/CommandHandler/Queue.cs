@@ -8,7 +8,7 @@ partial class CommandHandler
     {
         if (uri.Length == 0)
         {
-            var items = Db.Items.OrderItems().Select(item => (item, Db.GetAudioStreamUri(item.Id))).ToArray();
+            var items = Db.Items.OrderItems().Select(item => (item, Db.Client.GetAudioStreamUri(item.Id))).ToArray();
             Player.AddMany(items);
         }
         else
@@ -36,7 +36,7 @@ partial class CommandHandler
 
         if (item is not null)
         {
-            var url = Db.GetAudioStreamUri(item.Id);
+            var url = Db.Client.GetAudioStreamUri(item.Id);
             var queueId = Player.Add(url, item, parsedPos);
             return new("Id"u8, queueId.ToString());
         }

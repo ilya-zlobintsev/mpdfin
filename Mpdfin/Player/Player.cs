@@ -142,6 +142,8 @@ public class Player
     public float? Elapsed => Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
 
     public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
+    public event EventHandler? OnPlaybackStarted;
+    public event EventHandler? OnPlaybackStopped;
 
     public Player()
     {
@@ -163,11 +165,22 @@ public class Player
         MediaPlayer.Muted += (e, args) => RaiseEvent(Subsystem.mixer);
         MediaPlayer.Unmuted += (e, args) => RaiseEvent(Subsystem.mixer);
 
+        MediaPlayer.Playing += (_, args) => SpawnEventHandler(OnPlaybackStarted, args);
+        MediaPlayer.Stopped += (_, args) => SpawnEventHandler(OnPlaybackStopped, args);
+
         MediaPlayer.EncounteredError += (_, _) => Task.Run(NextSong);
         MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
     }
 
-    public Player(PlayerState state, Database db) : this()
+    void SpawnEventHandler(EventHandler? handler, EventArgs args)
+    {
+        if (handler is not null)
+        {
+            Task.Run(() => handler(this, args));
+        }
+    }
+
+    public void LoadState(PlayerState state, Database db)
     {
         _random = state.Random;
         CurrentPos = state.CurrentPos;
@@ -179,9 +192,8 @@ public class Player
         {
             Song ParseStoredItem((int, Guid) storedItem)
             {
-
                 var item = db.GetItem(storedItem.Item2) ?? throw new Exception("Item in state not found in db");
-                var url = db.GetAudioStreamUri(item.Id);
+                var url = db.Client.GetAudioStreamUri(item.Id);
                 return new Song(url, item, storedItem.Item1);
             }
 
@@ -191,7 +203,6 @@ public class Player
             Log.Information($"Loaded a queue of {Queue.Count} (randomized: {RandomQueue.Count}) items from state");
 
             PlayCurrent();
-            MediaPlayer.Playing += (_, _) => Log.Debug("Media playing");
 
             switch (state.PlaybackState)
             {
@@ -245,10 +256,11 @@ public class Player
                 lock (MediaPlayer)
                 {
                     Media media = new(libVLC, song.Uri);
-                    var result = MediaPlayer.Play(media);
+                    MediaPlayer.Play(media);
                 }
             });
         }
+
         RaiseEvent(Subsystem.player);
         RaiseEvent(Subsystem.mixer);
     }

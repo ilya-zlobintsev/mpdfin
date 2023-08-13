@@ -13,7 +13,6 @@ static class Program
     [RequiresUnreferencedCode("Serialization")]
     private static async Task<int> Main()
     {
-
         Config config;
         try
         {

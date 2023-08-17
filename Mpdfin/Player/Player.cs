@@ -41,7 +41,20 @@ public class Player
             {
                 if (value)
                 {
-                    RandomQueue = Queue.OrderBy(_ => System.Random.Shared.Next()).ToList();
+                    if (CurrentPos is not null)
+                    {
+                        var currentItem = Queue[CurrentPos.Value];
+
+                        RandomQueue = new(Queue);
+                        RandomQueue.RemoveAt(CurrentPos.Value);
+                        RandomQueue = Queue.OrderBy(_ => System.Random.Shared.Next()).ToList();
+                        RandomQueue.Insert(0, currentItem);
+                    }
+                    else
+                    {
+                        RandomQueue = Queue.OrderBy(item => System.Random.Shared.Next()).ToList();
+                    }
+
                     CurrentPos = 0;
                 }
                 else

@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using Mpdfin.DB;
 using Serilog;
 
 namespace Mpdfin.Mpd;
@@ -35,9 +37,43 @@ partial class CommandHandler
     Response LsInfo(string? uri)
     {
         var parts = uri?.Split("/").Where(item => item.Length > 0).ToArray() ?? Array.Empty<string>();
-        Response response = new();
 
-        switch (parts.Length)
+        var rootNode = Db.FilesystemRoot;
+        StringBuilder pathBuilder = new();
+        foreach (var part in parts)
+        {
+            rootNode = rootNode.Navigate(part);
+            pathBuilder.Append(part);
+            if (rootNode is null)
+                return new();
+        }
+        var path = pathBuilder.ToString();
+
+        Log.Debug($"Navigated to node with {rootNode.Children.Count} items");
+
+        Response response = new();
+        foreach (var node in rootNode.Children)
+        {
+            if (node.ItemId is not null)
+            {
+                var item = Db.Items.Find(item => item.Id == node.ItemId)!;
+                response.Extend(item.GetResponse());
+            }
+            else if (node.Name is not null)
+            {
+                string value;
+                if (!string.IsNullOrEmpty(path))
+                    value = $"{path}/{node.Name}";
+                else
+                    value = node.Name;
+
+                response.Add("directory"u8, value);
+            }
+        }
+
+        Log.Debug($"Navigated to {rootNode.Name}");
+
+        /*switch (parts.Length)
         {
             case 0:
                 {
@@ -84,7 +120,7 @@ partial class CommandHandler
                 }
             default:
                 throw new Exception("Path not found");
-        }
+        }*/
 
         return response;
     }

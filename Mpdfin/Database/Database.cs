@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Jellyfin.Sdk;
+using Mpdfin.Mpd;
 using Serilog;
 
 namespace Mpdfin.DB;
@@ -17,6 +18,7 @@ public class Database
         get => Storage.Items;
         private set => Storage.Items = value;
     }
+    public Node FilesystemRoot;
 
     public BaseItemDto? GetItem(Guid id)
     {
@@ -27,6 +29,7 @@ public class Database
     {
         Storage = storage;
         Client = client;
+        FilesystemRoot = Node.BuildTree(this);
     }
 
     [RequiresUnreferencedCode("Serialization")]
@@ -53,6 +56,7 @@ public class Database
                 includeItemTypes: new[] { BaseItemKind.Audio });
 
             Items = itemsResponse.Items.ToList();
+            FilesystemRoot = Node.BuildTree(this);
 
             Log.Debug($"Loaded {Items.Count} items");
 

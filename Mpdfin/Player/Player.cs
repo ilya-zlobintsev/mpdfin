@@ -329,7 +329,8 @@ public class Player
         if (pos is not null)
         {
             Queue.Insert(pos.Value, song);
-            if (pos >= CurrentPos)
+            RandomQueue.Add(song);
+            if (CurrentPos > pos)
             {
                 CurrentPos++;
             }
@@ -337,6 +338,7 @@ public class Player
         else
         {
             Queue.Add(song);
+            RandomQueue.Add(song);
         }
 
         PlaylistVersion++;

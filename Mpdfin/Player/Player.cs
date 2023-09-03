@@ -14,20 +14,7 @@ public class Player
 
     public List<Song> Queue { get; private set; }
     List<Song> RandomQueue { get; set; }
-    List<Song> ActiveQueue
-    {
-        get
-        {
-            if (Random)
-            {
-                return RandomQueue;
-            }
-            else
-            {
-                return Queue;
-            }
-        }
-    }
+    List<Song> ActiveQueue => Random ? RandomQueue : Queue;
 
     int nextSongId;
     public int PlaylistVersion;
@@ -411,7 +398,7 @@ public class Player
     public VLCState PlaybackState { get; private set; }
     public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 
-    public void SetPause(bool? pause)
+    public void SetPause(bool? pause = null)
     {
         lock (MediaPlayer)
         {

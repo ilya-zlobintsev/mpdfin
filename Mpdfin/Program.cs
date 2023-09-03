@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using Mpdfin.Player;
 using Serilog.Events;
 using Jellyfin.Sdk;
+using Mpdfin.MediaKeys;
 
 namespace Mpdfin;
 static class Program
@@ -85,6 +86,7 @@ static class Program
             player.LoadState(state, db);
         }
 
+        await MediaKeysController.Init(player);
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>

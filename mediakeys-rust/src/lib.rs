@@ -3,18 +3,20 @@ mod error;
 
 use error::MediaKeysError;
 use interoptopus::{
-    ffi_service, ffi_service_ctor, ffi_type, pattern, patterns::string::AsciiPointer, Inventory,
-    InventoryBuilder,
+    callback, ffi_service, ffi_service_ctor, ffi_type, pattern, patterns::string::AsciiPointer,
+    Inventory, InventoryBuilder,
 };
-use souvlaki::{MediaControls, MediaMetadata, PlatformConfig};
+use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, PlatformConfig};
 
 #[ffi_type(opaque)]
-pub struct MediaPlayerService {
+pub struct MediaKeysService {
     media_controls: MediaControls,
 }
 
+callback!(CallbackMediaControlEvent(media_event: FFIMediaControlEvent));
+
 #[ffi_service(error = "MediaKeysError", prefix = "media_keys_")]
-impl MediaPlayerService {
+impl MediaKeysService {
     #[ffi_service_ctor]
     pub fn new(name: AsciiPointer) -> Result<Self, MediaKeysError> {
         let name = name.as_str().unwrap();
@@ -23,12 +25,17 @@ impl MediaPlayerService {
             dbus_name: name,
             hwnd: None,
         };
-        let mut media_controls = MediaControls::new(platform_config)?;
-
-        media_controls
-            .attach(|event| println!("Event received: {:?}", event))
-            .unwrap();
+        let media_controls = MediaControls::new(platform_config)?;
         Ok(Self { media_controls })
+    }
+
+    pub fn attach(&mut self, callback: CallbackMediaControlEvent) -> Result<(), MediaKeysError> {
+        self.media_controls.attach(move |event| {
+            if let Ok(ffi_event) = FFIMediaControlEvent::try_from(event) {
+                callback.call(ffi_event);
+            }
+        })?;
+        Ok(())
     }
 
     pub fn set_metadata(&mut self, metadata: FFIMediaMetadata) -> Result<(), MediaKeysError> {
@@ -44,6 +51,7 @@ impl MediaPlayerService {
     }
 }
 
+// Unfortunately wrapping a pointer in an FFIOption produces invalid syntax in the c# generator
 #[ffi_type]
 #[repr(C)]
 pub struct FFIMediaMetadata<'a> {
@@ -54,6 +62,37 @@ pub struct FFIMediaMetadata<'a> {
     // pub duration: Option<Duration>,
 }
 
+#[ffi_type]
+#[repr(C)]
+pub enum FFIMediaControlEvent {
+    Play,
+    Pause,
+    Toggle,
+    Next,
+    Previous,
+    Stop,
+    Raise,
+    Quit,
+}
+
+impl TryFrom<MediaControlEvent> for FFIMediaControlEvent {
+    type Error = MediaKeysError;
+
+    fn try_from(value: MediaControlEvent) -> Result<Self, Self::Error> {
+        match value {
+            MediaControlEvent::Play => Ok(Self::Play),
+            MediaControlEvent::Pause => Ok(Self::Pause),
+            MediaControlEvent::Toggle => Ok(Self::Toggle),
+            MediaControlEvent::Next => Ok(Self::Next),
+            MediaControlEvent::Previous => Ok(Self::Previous),
+            MediaControlEvent::Stop => Ok(Self::Stop),
+            MediaControlEvent::Raise => Ok(Self::Raise),
+            MediaControlEvent::Quit => Ok(Self::Quit),
+            _ => Err(MediaKeysError::OtherError),
+        }
+    }
+}
+
 fn convert_ffi_optional_str(value: AsciiPointer<'_>) -> Option<&str> {
     value.as_str().ok().filter(|s| !s.is_empty())
 }
@@ -61,7 +100,7 @@ fn convert_ffi_optional_str(value: AsciiPointer<'_>) -> Option<&str> {
 pub fn my_inventory() -> Inventory {
     {
         InventoryBuilder::new()
-            .register(pattern!(MediaPlayerService))
+            .register(pattern!(MediaKeysService))
             .inventory()
     }
 }

@@ -55,6 +55,18 @@ namespace Mpdfin.Interop
             }
         }
 
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "media_keys_attach")]
+        public static extern MediaKeysError media_keys_attach(IntPtr context, CallbackMediaControlEvent callback);
+
+        public static void media_keys_attach_checked(IntPtr context, CallbackMediaControlEvent callback)
+        {
+            var rval = media_keys_attach(context, callback);;
+            if (rval != MediaKeysError.Ok)
+            {
+                throw new InteropException<MediaKeysError>(rval);
+            }
+        }
+
         [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "media_keys_set_metadata")]
         public static extern MediaKeysError media_keys_set_metadata(IntPtr context, FFIMediaMetadata metadata);
 
@@ -67,6 +79,18 @@ namespace Mpdfin.Interop
             }
         }
 
+    }
+
+    public enum FFIMediaControlEvent
+    {
+        Play = 0,
+        Pause = 1,
+        Toggle = 2,
+        Next = 3,
+        Previous = 4,
+        Stop = 5,
+        Raise = 6,
+        Quit = 7,
     }
 
     [Serializable]
@@ -87,16 +111,19 @@ namespace Mpdfin.Interop
         OtherError = 3,
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void CallbackMediaControlEvent(FFIMediaControlEvent media_event);
 
-    public partial class MediaPlayerService : IDisposable
+
+    public partial class MediaKeysService : IDisposable
     {
         private IntPtr _context;
 
-        private MediaPlayerService() {}
+        private MediaKeysService() {}
 
-        public static MediaPlayerService New(string name)
+        public static MediaKeysService New(string name)
         {
-            var self = new MediaPlayerService();
+            var self = new MediaKeysService();
             var rval = MediaKeysController.media_keys_new(ref self._context, name);
             if (rval != MediaKeysError.Ok)
             {
@@ -108,6 +135,15 @@ namespace Mpdfin.Interop
         public void Dispose()
         {
             var rval = MediaKeysController.media_keys_destroy(ref _context);
+            if (rval != MediaKeysError.Ok)
+            {
+                throw new InteropException<MediaKeysError>(rval);
+            }
+        }
+
+        public void Attach(CallbackMediaControlEvent callback)
+        {
+            var rval = MediaKeysController.media_keys_attach(_context, callback);
             if (rval != MediaKeysError.Ok)
             {
                 throw new InteropException<MediaKeysError>(rval);

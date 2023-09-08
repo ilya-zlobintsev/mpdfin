@@ -8,6 +8,7 @@ using Mpdfin.Player;
 using Serilog.Events;
 using Jellyfin.Sdk;
 using Mpdfin.Interop;
+using System.ComponentModel;
 
 namespace Mpdfin;
 static class Program
@@ -87,24 +88,15 @@ static class Program
             player.LoadState(state, db);
         }
 
-        var mediaPlayerService = MediaPlayerService.New("mpdfin");
-        FFIMediaMetadata metadata = new()
-        {
-            title = "asd",
-            artist = "test"
-        };
-        mediaPlayerService.SetMetadata(metadata);
-        // mediaKeysController
-
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>
-        {
-            if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
             {
-                await player.State.Save();
-                lastStateUpdate = DateTime.UtcNow;
-            }
-        });
+                if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
+                {
+                    await player.State.Save();
+                    lastStateUpdate = DateTime.UtcNow;
+                }
+            });
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 

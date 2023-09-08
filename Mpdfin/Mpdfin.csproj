@@ -5,9 +5,9 @@
   </Target>
 
   <ItemGroup>
-    <Content Include="../Mpdfin.MediaKeys/target/release/libmpdfin_mediakeys.so">
+    <None Include="../Mpdfin.MediaKeys/target/release/libmpdfin_mediakeys.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>

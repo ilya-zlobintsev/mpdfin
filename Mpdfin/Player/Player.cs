@@ -496,31 +496,38 @@ public class Player
 
     void UpdateMetadata()
     {
-        var mediaPlayback = PlaybackState switch
+        try
         {
-            VLCState.Playing => FFIMediaPlayback.Playing,
-            VLCState.Paused => FFIMediaPlayback.Paused,
-            _ => FFIMediaPlayback.Stopped,
-        };
-        mediaKeysService.SetPlayback(mediaPlayback);
-
-        var currentSong = CurrentSong;
-
-        FFIMediaMetadata metadata;
-        if (currentSong is not null && currentSong.Value.Item is not null)
-        {
-            var item = currentSong.Value.Item;
-            metadata = new()
+            var mediaPlayback = PlaybackState switch
             {
-                title = item.Name,
-                album = item.Album,
-                artist = string.Join(", ", item.Artists),
+                VLCState.Playing => FFIMediaPlayback.Playing,
+                VLCState.Paused => FFIMediaPlayback.Paused,
+                _ => FFIMediaPlayback.Stopped,
             };
+            mediaKeysService.SetPlayback(mediaPlayback);
+
+            var currentSong = CurrentSong;
+
+            FFIMediaMetadata metadata;
+            if (currentSong is not null && currentSong.Value.Item is not null)
+            {
+                var item = currentSong.Value.Item;
+                metadata = new()
+                {
+                    title = item.Name,
+                    album = item.Album,
+                    artist = string.Join(", ", item.Artists),
+                };
+            }
+            else
+            {
+                metadata = new();
+            }
+            mediaKeysService.SetMetadata(metadata);
         }
-        else
+        catch (Exception ex)
         {
-            metadata = new();
+            Log.Error($"Could not update metadata: {ex}");
         }
-        mediaKeysService.SetMetadata(metadata);
     }
 }

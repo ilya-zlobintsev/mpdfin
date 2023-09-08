@@ -1,4 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="cargo build --release --manifest-path ../Mpdfin.MediaKeys/Cargo.toml" />
+    <Exec Command="cargo test --release --manifest-path ../Mpdfin.MediaKeys/Cargo.toml" />
+  </Target>
+
+  <ItemGroup>
+    <Content Include="../Mpdfin.MediaKeys/target/release/libmpdfin_mediakeys.so">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -21,7 +31,6 @@
     <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
-    <PackageReference Condition="$([MSBuild]::IsOSPlatform('linux'))" Include="Tmds.DBus" Version="0.10.1" />
     <PackageReference Include="U8String" Version="0.2.1-alpha" />
   </ItemGroup>
   

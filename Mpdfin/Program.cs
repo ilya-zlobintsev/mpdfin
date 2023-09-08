@@ -61,6 +61,7 @@ static class Program
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }
 
+
         Player.Player player = new();
 
         player.OnPlaybackStarted += async (_, _) =>
@@ -84,7 +85,6 @@ static class Program
         {
             player.LoadState(state, db);
         }
-
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>

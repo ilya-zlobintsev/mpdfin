@@ -3,6 +3,7 @@ using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
 using Mpdfin.DB;
+using Mpdfin.MediaKeys;
 using Serilog;
 
 namespace Mpdfin.Player;
@@ -14,20 +15,7 @@ public class Player
 
     public List<Song> Queue { get; private set; }
     List<Song> RandomQueue { get; set; }
-    List<Song> ActiveQueue
-    {
-        get
-        {
-            if (Random)
-            {
-                return RandomQueue;
-            }
-            else
-            {
-                return Queue;
-            }
-        }
-    }
+    List<Song> ActiveQueue => Random ? RandomQueue : Queue;
 
     int nextSongId;
     public int PlaylistVersion;
@@ -93,7 +81,7 @@ public class Player
         {
             if (CurrentPos is not null)
             {
-                return ActiveQueue[CurrentPos.Value];
+                return ActiveQueue.ElementAtOrDefault(CurrentPos.Value);
             }
             else
             {
@@ -158,6 +146,9 @@ public class Player
     public event EventHandler? OnPlaybackStarted;
     public event EventHandler? OnPlaybackStopped;
 
+    readonly MediaKeysService mediaKeysService;
+    readonly CallbackMediaControlEvent handleMediaControlEvent;
+
     public Player()
     {
 
@@ -170,6 +161,7 @@ public class Player
         PlaylistVersion = 1;
         nextSongId = 0;
         Volume = 50;
+        mediaKeysService = MediaKeysService.New("mpdfin");
 
         MediaPlayer.Playing += (e, args) => PlaybackChanged();
         MediaPlayer.Stopped += (e, args) => PlaybackChanged();
@@ -183,6 +175,34 @@ public class Player
 
         MediaPlayer.EncounteredError += (_, _) => Task.Run(NextSong);
         MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
+
+        handleMediaControlEvent = new CallbackMediaControlEvent((mediaEvent) =>
+        {
+            switch (mediaEvent)
+            {
+                case FFIMediaControlEvent.Play:
+                    PlayCurrent();
+                    break;
+                case FFIMediaControlEvent.Pause:
+                    SetPause(true);
+                    break;
+                case FFIMediaControlEvent.Toggle:
+                    SetPause();
+                    break;
+                case FFIMediaControlEvent.Next:
+                    NextSong();
+                    break;
+                case FFIMediaControlEvent.Previous:
+                    PreviousSong();
+                    break;
+                case FFIMediaControlEvent.Stop:
+                    Stop();
+                    break;
+            }
+        });
+        mediaKeysService.Attach(handleMediaControlEvent);
+
+        OnSubsystemUpdate += (_, _) => UpdateMetadata();
     }
 
     void SpawnEventHandler(EventHandler? handler, EventArgs args)
@@ -217,6 +237,7 @@ public class Player
 
             PlayCurrent();
 
+            Log.Debug($"Loading playbackstate {Enum.GetName(state.PlaybackState)}");
             switch (state.PlaybackState)
             {
                 case VLCState.Playing:
@@ -228,6 +249,7 @@ public class Player
                     Stop();
                     break;
             }
+            Log.Debug("State restored");
 
             if (state.Elapsed is not null)
             {
@@ -261,6 +283,7 @@ public class Player
 
     public void PlayCurrent()
     {
+        Log.Debug("Playing");
         if (CurrentPos < ActiveQueue.Count)
         {
             var song = ActiveQueue[CurrentPos.Value];
@@ -411,7 +434,7 @@ public class Player
     public VLCState PlaybackState { get; private set; }
     public AudioOutputDescription[] AudioOutputDevices => libVLC.AudioOutputs;
 
-    public void SetPause(bool? pause)
+    public void SetPause(bool? pause = null)
     {
         lock (MediaPlayer)
         {
@@ -469,5 +492,42 @@ public class Player
 
         var song = Queue[apparentPosition];
         return ActiveQueue.FindIndex(item => item.Id == song.Id);
+    }
+
+    void UpdateMetadata()
+    {
+        try
+        {
+            var mediaPlayback = PlaybackState switch
+            {
+                VLCState.Playing => FFIMediaPlayback.Playing,
+                VLCState.Paused => FFIMediaPlayback.Paused,
+                _ => FFIMediaPlayback.Stopped,
+            };
+            mediaKeysService.SetPlayback(mediaPlayback);
+
+            var currentSong = CurrentSong;
+
+            FFIMediaMetadata metadata;
+            if (currentSong is not null && currentSong.Value.Item is not null)
+            {
+                var item = currentSong.Value.Item;
+                metadata = new()
+                {
+                    title = item.Name,
+                    album = item.Album,
+                    artist = string.Join(", ", item.Artists),
+                };
+            }
+            else
+            {
+                metadata = new();
+            }
+            mediaKeysService.SetMetadata(metadata);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"Could not update metadata: {ex}");
+        }
     }
 }

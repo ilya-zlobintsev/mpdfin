@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="cargo build --release --manifest-path ../mediakeys-rust/Cargo.toml" />
-    <Exec Command="cargo test --release --manifest-path ../mediakeys-rust/Cargo.toml" />
+    <Exec Command="cargo build --release --manifest-path ../Mpdfin.MediaKeys/Cargo.toml" />
+    <Exec Command="cargo test --release --manifest-path ../Mpdfin.MediaKeys/Cargo.toml" />
   </Target>
 
   <ItemGroup>
-    <Content Include="../mediakeys-rust/target/release/libmpdfin_mediakeys.so">
+    <Content Include="../Mpdfin.MediaKeys/target/release/libmpdfin_mediakeys.so">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

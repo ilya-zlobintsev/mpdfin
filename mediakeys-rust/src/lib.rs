@@ -6,7 +6,7 @@ use interoptopus::{
     callback, ffi_service, ffi_service_ctor, ffi_type, pattern, patterns::string::AsciiPointer,
     Inventory, InventoryBuilder,
 };
-use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, PlatformConfig};
+use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, PlatformConfig};
 
 #[ffi_type(opaque)]
 pub struct MediaKeysService {
@@ -49,6 +49,11 @@ impl MediaKeysService {
         self.media_controls.set_metadata(metadata)?;
         Ok(())
     }
+
+    pub fn set_playback(&mut self, playback: FFIMediaPlayback) -> Result<(), MediaKeysError> {
+        self.media_controls.set_playback(playback.into())?;
+        Ok(())
+    }
 }
 
 // Unfortunately wrapping a pointer in an FFIOption produces invalid syntax in the c# generator
@@ -89,6 +94,24 @@ impl TryFrom<MediaControlEvent> for FFIMediaControlEvent {
             MediaControlEvent::Raise => Ok(Self::Raise),
             MediaControlEvent::Quit => Ok(Self::Quit),
             _ => Err(MediaKeysError::OtherError),
+        }
+    }
+}
+
+#[ffi_type]
+#[repr(C)]
+pub enum FFIMediaPlayback {
+    Stopped,
+    Paused,
+    Playing,
+}
+
+impl From<FFIMediaPlayback> for MediaPlayback {
+    fn from(value: FFIMediaPlayback) -> Self {
+        match value {
+            FFIMediaPlayback::Stopped => Self::Stopped,
+            FFIMediaPlayback::Paused => Self::Paused { progress: None },
+            FFIMediaPlayback::Playing => Self::Playing { progress: None },
         }
     }
 }

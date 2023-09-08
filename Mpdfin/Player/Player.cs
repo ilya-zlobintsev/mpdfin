@@ -496,6 +496,14 @@ public class Player
 
     void UpdateMetadata()
     {
+        var mediaPlayback = PlaybackState switch
+        {
+            VLCState.Playing => FFIMediaPlayback.Playing,
+            VLCState.Paused => FFIMediaPlayback.Paused,
+            _ => FFIMediaPlayback.Stopped,
+        };
+        mediaKeysService.SetPlayback(mediaPlayback);
+
         var currentSong = CurrentSong;
 
         FFIMediaMetadata metadata;

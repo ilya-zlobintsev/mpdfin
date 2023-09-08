@@ -79,6 +79,18 @@ namespace Mpdfin.Interop
             }
         }
 
+        [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl, EntryPoint = "media_keys_set_playback")]
+        public static extern MediaKeysError media_keys_set_playback(IntPtr context, FFIMediaPlayback playback);
+
+        public static void media_keys_set_playback_checked(IntPtr context, FFIMediaPlayback playback)
+        {
+            var rval = media_keys_set_playback(context, playback);;
+            if (rval != MediaKeysError.Ok)
+            {
+                throw new InteropException<MediaKeysError>(rval);
+            }
+        }
+
     }
 
     public enum FFIMediaControlEvent
@@ -91,6 +103,13 @@ namespace Mpdfin.Interop
         Stop = 5,
         Raise = 6,
         Quit = 7,
+    }
+
+    public enum FFIMediaPlayback
+    {
+        Stopped = 0,
+        Paused = 1,
+        Playing = 2,
     }
 
     [Serializable]
@@ -153,6 +172,15 @@ namespace Mpdfin.Interop
         public void SetMetadata(FFIMediaMetadata metadata)
         {
             var rval = MediaKeysController.media_keys_set_metadata(_context, metadata);
+            if (rval != MediaKeysError.Ok)
+            {
+                throw new InteropException<MediaKeysError>(rval);
+            }
+        }
+
+        public void SetPlayback(FFIMediaPlayback playback)
+        {
+            var rval = MediaKeysController.media_keys_set_playback(_context, playback);
             if (rval != MediaKeysError.Ok)
             {
                 throw new InteropException<MediaKeysError>(rval);

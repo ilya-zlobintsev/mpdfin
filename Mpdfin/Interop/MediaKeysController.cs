@@ -5,10 +5,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Mpdfin.Interop;
+using Mpdfin.MediaKeys;
 #pragma warning restore 0105
 
-namespace Mpdfin.Interop
+namespace Mpdfin.MediaKeys
 {
     public static partial class MediaKeysController
     {

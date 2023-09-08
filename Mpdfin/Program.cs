@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using Mpdfin.Player;
 using Serilog.Events;
 using Jellyfin.Sdk;
-using Mpdfin.Interop;
-using System.ComponentModel;
 
 namespace Mpdfin;
 static class Program
@@ -90,13 +88,13 @@ static class Program
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>
+        {
+            if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
             {
-                if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
-                {
-                    await player.State.Save();
-                    lastStateUpdate = DateTime.UtcNow;
-                }
-            });
+                await player.State.Save();
+                lastStateUpdate = DateTime.UtcNow;
+            }
+        });
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 

@@ -8,7 +8,7 @@ fn bindings_csharp() -> Result<(), Error> {
 
     let config = Config {
         dll_name: "mpdfin_mediakeys".to_string(),
-        namespace_mappings: NamespaceMappings::new("Mpdfin.Interop"),
+        namespace_mappings: NamespaceMappings::new("Mpdfin.MediaKeys"),
         class: "MediaKeysController".to_owned(),
         ..Config::default()
     };

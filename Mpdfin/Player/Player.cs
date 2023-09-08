@@ -3,7 +3,7 @@ using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
 using Mpdfin.DB;
-using Mpdfin.Interop;
+using Mpdfin.MediaKeys;
 using Serilog;
 
 namespace Mpdfin.Player;

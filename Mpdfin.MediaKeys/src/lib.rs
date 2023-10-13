@@ -1,4 +1,4 @@
-#![allow(clippy::useless_conversion)]
+#![allow(clippy::useless_conversion, unused_must_use)]
 mod error;
 
 use error::MediaKeysError;

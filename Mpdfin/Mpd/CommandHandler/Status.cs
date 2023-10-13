@@ -10,43 +10,43 @@ partial class CommandHandler
         Response response = new();
 
         response.Add("repeat"u8, "0"u8);
-        response.Add("random"u8, Convert.ToUInt32(Player.Random).ToU8String());
+        response.Add("random"u8, Convert.ToUInt32(Player.Random).ToString());
         response.Add("single"u8, "0"u8);
         response.Add("consume"u8, "0"u8);
 
         if (Player.QueuePos is not null)
         {
-            response.Add("song"u8, Player.QueuePos.Value.ToU8String());
-            response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToU8String());
+            response.Add("song"u8, Player.QueuePos.Value.ToString());
+            response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToString());
         }
 
         var nextSong = Player.QueueNext;
         if (nextSong is not null)
         {
             var (pos, song) = nextSong.Value;
-            response.Add("nextsong"u8, pos.ToU8String());
-            response.Add("nextsongid"u8, song.Id.ToU8String());
+            response.Add("nextsong"u8, pos.ToString());
+            response.Add("nextsongid"u8, song.Id.ToString());
         }
 
         if (Player.Elapsed is not null)
         {
-            response.Add("elapsed"u8, Player.Elapsed.Value.ToU8String());
+            response.Add("elapsed"u8, Player.Elapsed.Value.ToString());
             response.Add("time"u8, $"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}");
-            response.Add("duration"u8, Player.Duration!.Value.ToU8String());
+            response.Add("duration"u8, Player.Duration!.Value.ToString());
         }
 
-        response.Add("volume"u8, Player.Volume.ToU8String());
+        response.Add("volume"u8, Player.Volume.ToString());
         response.Add("state"u8, Player.PlaybackState switch
         {
             VLCState.Playing => "play"u8,
             VLCState.Paused => "pause"u8,
             _ => "stop"u8,
         });
-        response.Add("playlist"u8, Player.PlaylistVersion.ToU8String());
-        response.Add("playlistlength"u8, Player.Queue.Count.ToU8String());
+        response.Add("playlist"u8, Player.PlaylistVersion.ToString());
+        response.Add("playlistlength"u8, Player.Queue.Count.ToString());
 
         if (Updating)
-            response.Add("updating_db"u8, UpdateJobId.ToU8String());
+            response.Add("updating_db"u8, UpdateJobId.ToString());
 
         return response;
     }
@@ -68,9 +68,9 @@ partial class CommandHandler
     {
         Response response = new();
 
-        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count().ToU8String());
-        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count().ToU8String());
-        response.Add("songs"u8, Db.Items.Count.ToU8String());
+        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count().ToString());
+        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count().ToString());
+        response.Add("songs"u8, Db.Items.Count.ToString());
 
         return response;
     }

@@ -10,13 +10,14 @@ partial class CommandHandler
     Response List(Tag tag)
     {
         var values = Db.GetUniqueTagValues(tag);
-        var key = Enum.GetName(tag)!.ToU8String();
+        var key = Enum.GetName(tag)!;
+        var keyBytes = Encoding.UTF8.GetBytes(key);
 
         Response response = new();
 
         foreach (var value in values)
         {
-            response.Add(key, value);
+            response.Add(keyBytes, value);
         }
 
         return response;
@@ -147,6 +148,6 @@ partial class CommandHandler
             }
         }).Start();
 
-        return new("updating_db"u8, UpdateJobId.ToU8String());
+        return new("updating_db"u8, UpdateJobId.ToString());
     }
 }

@@ -454,8 +454,12 @@ public class Player
     {
         int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
 
-        var span = CollectionsMarshal.AsSpan(Queue)[start..end];
-        System.Random.Shared.Shuffle(span);
+        var shuffled = Queue.GetRange(start, end - start).OrderBy(_ => System.Random.Shared.Next());
+        for (int i = 0; i < end - start; i++)
+        {
+            var item = shuffled.ElementAt(i);
+            Queue[start + i] = item;
+        }
 
         if (currentId is not null)
             CurrentPos = Queue.FindIndex(item => item.Id == currentId);

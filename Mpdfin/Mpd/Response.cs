@@ -29,7 +29,8 @@ readonly record struct Response
     {
         if (value is not null)
         {
-            Add(key, value.ToU8String());
+            var data = Encoding.UTF8.GetBytes(value);
+            Add(key, data);
         }
     }
 
@@ -39,7 +40,7 @@ readonly record struct Response
         {
             foreach (var value in values)
             {
-                Add(key, value.ToU8String());
+                Add(key, value);
             }
         }
     }

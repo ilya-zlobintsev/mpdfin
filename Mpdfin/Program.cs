@@ -24,9 +24,11 @@ static class Program
             Console.WriteLine($"Could not load config file: {e.Message}");
             throw;
         }
+        var jellyfinConfig = config.Jellyfin;
 
+        var logLevel = config.LogLevel is not null ? Enum.Parse<LogEventLevel>(config.LogLevel, true) : LogEventLevel.Information;
         using var log = new LoggerConfiguration()
-            .MinimumLevel.Is(config.LogLevel ?? LogEventLevel.Information)
+            .MinimumLevel.Is(logLevel)
             .WriteTo.Console(outputTemplate: "[{Level:u}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
         Log.Logger = log;
@@ -38,11 +40,11 @@ static class Program
         if (storage is null)
         {
             Log.Information("Database does not exist");
-            var auth = await JellyfinClient.Authenticate(config.Jellyfin.ServerUrl, config.Jellyfin.Username, config.Jellyfin.Password);
+            var auth = await JellyfinClient.Authenticate(jellyfinConfig.ServerUrl, jellyfinConfig.Username, jellyfinConfig.Password);
             Log.Information($"Logged in as {auth.User.Name}");
 
             storage = new(auth);
-            client = new(config.Jellyfin.ServerUrl, auth);
+            client = new(jellyfinConfig.ServerUrl, auth);
             db = new(client, storage);
 
             try
@@ -56,7 +58,7 @@ static class Program
         }
         else
         {
-            client = new(config.Jellyfin.ServerUrl, storage.AuthenticationResult);
+            client = new(jellyfinConfig.ServerUrl, storage.AuthenticationResult);
             db = new(client, storage);
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }

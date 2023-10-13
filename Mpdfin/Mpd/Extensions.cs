@@ -1,6 +1,7 @@
 using Jellyfin.Sdk;
 using Mpdfin.Player;
 using Mpdfin.DB;
+using System.Text;
 
 namespace Mpdfin.Mpd;
 
@@ -24,9 +25,9 @@ static class Extensions
         var response = song.Item.GetResponse();
 
         if (pos is not null)
-            response.Add("Pos"u8, pos.Value.ToU8String());
+            response.Add("Pos"u8, pos.Value.ToString());
 
-        response.Add("Id"u8, song.Id.ToU8String());
+        response.Add("Id"u8, song.Id.ToString());
 
         return response;
     }
@@ -46,20 +47,21 @@ static class Extensions
     {
         Response response = new();
 
-        response.Add("file"u8, item.Id.ToU8String());
+        response.Add("file"u8, item.Id.ToString());
 
         foreach (var tag in Enum.GetValues<Tag>())
         {
-            var key = Enum.GetName(tag)!.ToU8String();
+            var key = Enum.GetName(tag)!.ToString();
+            var keyBytes = Encoding.UTF8.GetBytes(key);
             var value = item.GetTagValue(tag);
-            response.Add(key, value);
+            response.Add(keyBytes, value);
         }
 
         var duration = item.GetDuration();
         if (duration is not null)
         {
-            response.Add("duration"u8, duration.Value.ToU8String());
-            response.Add("time"u8, ((int)duration.Value).ToU8String());
+            response.Add("duration"u8, duration.Value.ToString());
+            response.Add("time"u8, ((int)duration.Value).ToString());
         }
 
         return response;

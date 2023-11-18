@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
+using Serilog;
 
 namespace Mpdfin.Mpd;
 
@@ -10,22 +12,21 @@ partial class CommandHandler
         Response response = new();
 
         response.Add("repeat"u8, "0"u8);
-        response.Add("random"u8, Convert.ToUInt32(Player.Random).ToString());
+        response.Add("random"u8, Convert.ToUInt32(Player.Queue.Random).ToString());
         response.Add("single"u8, "0"u8);
         response.Add("consume"u8, "0"u8);
 
-        if (Player.QueuePos is not null)
-        {
-            response.Add("song"u8, Player.QueuePos.Value.ToString());
-            response.Add("songid"u8, Player.CurrentSong!.Value.Id.ToString());
-        }
+        if (Player.CurrentPos is not null)
+            response.Add("song"u8, Player.CurrentPos.Value.ToString());
 
-        var nextSong = Player.QueueNext;
+        if (Player.CurrentSong is not null)
+            response.Add("songid"u8, Player.CurrentSong.Id.ToString());
+
+        var nextSong = Player.NextSong;
         if (nextSong is not null)
         {
-            var (pos, song) = nextSong.Value;
-            response.Add("nextsong"u8, pos.ToString());
-            response.Add("nextsongid"u8, song.Id.ToString());
+            response.Add("nextsong"u8, Player.NextPos.ToString());
+            response.Add("nextsongid"u8, nextSong.SongId.ToString());
         }
 
         if (Player.Elapsed is not null)
@@ -56,7 +57,7 @@ partial class CommandHandler
         var currentSong = Player.CurrentSong;
         if (currentSong is not null)
         {
-            return currentSong.Value.GetResponse(Player.QueuePos);
+            return currentSong.GetResponse(Db);
         }
         else
         {
@@ -89,31 +90,35 @@ partial class CommandHandler
         var finishedTask = await Task.WhenAny(notificationTask, incomingCommandTask);
         source.Cancel();
 
-        if (finishedTask == notificationTask)
+        try
         {
-            Response response = new();
-
-            foreach (var subsystem in notificationTask.Result)
+            if (finishedTask == notificationTask)
             {
-                response.Add("changed"u8, Enum.GetName(subsystem));
-            }
+                Response response = new();
 
-            return response;
-        }
-        else if (finishedTask == incomingCommandTask)
-        {
-            if (incomingCommandTask.Result?.Command == Command.noidle || incomingCommandTask.Result is null)
-            {
-                return new();
+                foreach (var subsystem in notificationTask.Result)
+                {
+                    response.Add("changed"u8, Enum.GetName(subsystem));
+                }
+
+                return response;
             }
             else
             {
-                throw new Exception($"Only `noidle` can be called when idling, got `{incomingCommandTask.Result?.Command}`");
+                if (incomingCommandTask.Result?.Command == Command.noidle || incomingCommandTask.Result is null)
+                {
+                    return new();
+                }
+                else
+                {
+                    throw new Exception($"Only `noidle` can be called when idling, got `{incomingCommandTask.Result?.Command}`");
+                }
             }
         }
-        else
+        catch (Exception ex)
         {
-            throw new UnreachableException();
+            Log.Debug($"XD {ex}");
+            return new();
         }
     }
 }

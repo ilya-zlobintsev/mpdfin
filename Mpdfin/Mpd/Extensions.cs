@@ -20,14 +20,13 @@ static class Extensions
         return new AsyncLock { Lock = semaphore };
     }
 
-    public static Response GetResponse(this Song song, int? pos)
+    public static Response GetResponse(this Player.QueueItem item, Database db)
     {
-        var response = song.Item.GetResponse();
+        var song = db.GetItem(item.SongId) ?? throw new Exception("ID not found in database");
+        var response = song.GetResponse();
 
-        if (pos is not null)
-            response.Add("Pos"u8, pos.Value.ToString());
-
-        response.Add("Id"u8, song.Id.ToString());
+        response.Add("Pos"u8, item.Position.ToString());
+        response.Add("Id"u8, item.Id.ToString());
 
         return response;
     }

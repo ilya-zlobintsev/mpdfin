@@ -32,7 +32,15 @@ class ClientStream
     public async Task WriteResponse(Response response)
     {
         if (!response.Contents.WrittenMemory.IsEmpty)
-            Log.Debug($"Writing response {response}");
+        {
+            var responseText = response.ToString();
+            if (responseText.Length > 100)
+            {
+                responseText = $"{responseText[..100]}...";
+            }
+
+            Log.Debug($"Writing response {responseText}");
+        }
         else
             Log.Debug("Writing empty response");
 

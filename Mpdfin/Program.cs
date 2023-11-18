@@ -64,23 +64,23 @@ static class Program
         }
 
 
-        Player.Player player = new();
+        Player.Player player = new(db);
 
-        player.OnPlaybackStarted += async (_, _) =>
-        {
-            Log.Debug("Playback started");
-            var currentSong = player.CurrentSong;
-            if (currentSong is not null)
-            {
-                PlaybackStartInfo info = new()
-                {
-                    ItemId = player.CurrentSong!.Value.Item.Id
-                };
+        // player.OnPlaybackStarted += async (_, _) =>
+        // {
+        //     Log.Debug("Playback started");
+        //     var currentSong = player.CurrentSong;
+        //     if (currentSong is not null)
+        //     {
+        //         PlaybackStartInfo info = new()
+        //         {
+        //             ItemId = player.CurrentSong!.SongId,
+        //         };
 
-                await client.PlaystateClient.ReportPlaybackStartAsync(info);
-                Log.Debug("Reported playback start");
-            }
-        };
+        //         await client.PlaystateClient.ReportPlaybackStartAsync(info);
+        //         Log.Debug("Reported playback start");
+        //     }
+        // };
 
         var state = PlayerState.Load();
         if (state is not null)
@@ -90,13 +90,13 @@ static class Program
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>
-        {
-            if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
-            {
-                await player.State.Save();
-                lastStateUpdate = DateTime.UtcNow;
-            }
-        });
+                {
+                    if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
+                    {
+                        await player.State.Save();
+                        lastStateUpdate = DateTime.UtcNow;
+                    }
+                });
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Data.Common;
 using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
@@ -12,101 +12,17 @@ public class Player
 {
     readonly LibVLC libVLC;
     readonly MediaPlayer MediaPlayer;
+    readonly Database database;
 
-    public List<Song> Queue { get; private set; }
-    List<Song> RandomQueue { get; set; }
-    List<Song> ActiveQueue => Random ? RandomQueue : Queue;
+    public Queue Queue { get; set; }
 
-    int nextSongId;
     public int PlaylistVersion;
-    bool _random;
-    public bool Random
-    {
-        get => _random;
-        set
-        {
-            if (value != _random)
-            {
-                if (value)
-                {
-                    if (CurrentPos is not null)
-                    {
-                        var currentItem = Queue[CurrentPos.Value];
 
-                        RandomQueue = new(Queue);
-                        RandomQueue.RemoveAt(CurrentPos.Value);
-                        RandomQueue = Queue.OrderBy(_ => System.Random.Shared.Next()).ToList();
-                        RandomQueue.Insert(0, currentItem);
-                    }
-                    else
-                    {
-                        RandomQueue = Queue.OrderBy(item => System.Random.Shared.Next()).ToList();
-                    }
+    public int? CurrentPos { get; private set; }
+    public int? NextPos => CurrentPos is not null ? Queue.OffsetPosition(CurrentPos.Value, 1) : null;
 
-                    CurrentPos = 0;
-                }
-                else
-                {
-                    if (CurrentPos is not null)
-                    {
-                        var currentItem = RandomQueue[CurrentPos.Value];
-                        CurrentPos = Queue.FindIndex(item => item.Id == currentItem.Id);
-                    }
-                }
-                _random = value;
-                RaiseEvent(Subsystem.options);
-            }
-        }
-    }
-
-    int? CurrentPos;
-    public int? QueuePos
-    {
-        get
-        {
-            if (CurrentPos is not null)
-            {
-                return NormalizePosition(CurrentPos.Value);
-            }
-            else
-            {
-                return CurrentPos;
-            }
-        }
-    }
-
-    public Song? CurrentSong
-    {
-        get
-        {
-            if (CurrentPos is not null)
-            {
-                return ActiveQueue.ElementAtOrDefault(CurrentPos.Value);
-            }
-            else
-            {
-                return null;
-            }
-        }
-    }
-
-    public (int, Song)? QueueNext
-    {
-        get
-        {
-            if (CurrentPos is not null && CurrentPos < ActiveQueue.Count - 1)
-            {
-                var nextPos = CurrentPos.Value + 1;
-                var normalizedPos = NormalizePosition(nextPos);
-                return (normalizedPos, ActiveQueue[nextPos]);
-            }
-            else
-            {
-                return null;
-            }
-        }
-    }
-
+    public QueueItem? CurrentSong => CurrentPos is not null ? Queue.ItemAtPosition(CurrentPos.Value) : null;
+    public QueueItem? NextSong => NextPos is not null ? Queue.ItemAtPosition(NextPos.Value) : null;
 
     public int Volume
     {
@@ -120,24 +36,17 @@ public class Player
         }
     }
 
-    public PlayerState State
+    public PlayerState State => new()
     {
-        get
-        {
-            return new PlayerState
-            {
-                Volume = Volume,
-                CurrentPos = CurrentPos,
-                Queue = Queue.ConvertAll(song => (song.Id, song.Item.Id)),
-                RandomQueue = RandomQueue.ConvertAll(song => (song.Id, song.Item.Id)),
-                PlaylistVersion = PlaylistVersion,
-                NextSongId = nextSongId,
-                PlaybackState = PlaybackState,
-                Elapsed = Elapsed,
-                Random = Random,
-            };
-        }
-    }
+        Volume = Volume,
+        CurrentPos = CurrentPos,
+        QueueItems = Queue.Items,
+        NextSongId = Queue.NextItemId,
+        Random = Queue.Random,
+        PlaylistVersion = PlaylistVersion,
+        PlaybackState = PlaybackState,
+        Elapsed = Elapsed,
+    };
 
     public float? Duration => CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
     public float? Elapsed => Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
@@ -149,17 +58,16 @@ public class Player
     readonly MediaKeysService mediaKeysService;
     readonly CallbackMediaControlEvent handleMediaControlEvent;
 
-    public Player()
+    public Player(Database db)
     {
+        database = db;
 
         libVLC = new();
         libVLC.SetUserAgent("Mpdfin", "Mpdfin client");
         MediaPlayer = new(libVLC);
 
         Queue = new();
-        RandomQueue = new();
         PlaylistVersion = 1;
-        nextSongId = 0;
         Volume = 50;
         mediaKeysService = MediaKeysService.New("mpdfin");
 
@@ -173,8 +81,8 @@ public class Player
         MediaPlayer.Playing += (_, args) => SpawnEventHandler(OnPlaybackStarted, args);
         MediaPlayer.Stopped += (_, args) => SpawnEventHandler(OnPlaybackStopped, args);
 
-        MediaPlayer.EncounteredError += (_, _) => Task.Run(NextSong);
-        MediaPlayer.EndReached += (_, _) => Task.Run(NextSong);
+        MediaPlayer.EncounteredError += (_, _) => Task.Run(PlayNextSong);
+        MediaPlayer.EndReached += (_, _) => Task.Run(PlayNextSong);
 
         handleMediaControlEvent = new CallbackMediaControlEvent((mediaEvent) =>
         {
@@ -190,7 +98,7 @@ public class Player
                     SetPause();
                     break;
                 case FFIMediaControlEvent.Next:
-                    NextSong();
+                    PlayNextSong();
                     break;
                 case FFIMediaControlEvent.Previous:
                     PreviousSong();
@@ -213,34 +121,45 @@ public class Player
         }
     }
 
+    public void SetRandom(bool value)
+    {
+        Queue.SetRandom(value);
+        RaiseEvent(Subsystem.options);
+    }
+
     public void LoadState(PlayerState state, Database db)
     {
-        _random = state.Random;
-        CurrentPos = state.CurrentPos;
+        if (state.QueueItems is not null)
+        {
+            Queue = new(state.QueueItems, state.NextSongId, state.Random);
+            Log.Information($"Loaded a queue of {Queue.Count} items from state");
+        }
+
+        if (state.CurrentPos < Queue.Count)
+            CurrentPos = state.CurrentPos;
+
         Volume = state.Volume;
         PlaylistVersion = state.PlaylistVersion;
-        nextSongId = state.NextSongId;
 
         try
         {
-            Song ParseStoredItem((int, Guid) storedItem)
+
+            if (CurrentPos is not null)
             {
-                var item = db.GetItem(storedItem.Item2) ?? throw new Exception("Item in state not found in db");
-                var url = db.Client.GetAudioStreamUri(item.Id);
-                return new Song(url, item, storedItem.Item1);
+                var item = Queue.ItemAtPosition(CurrentPos.Value);
+                if (item is not null)
+                {
+                    Media media = new(libVLC, db.Client.GetAudioStreamUri(item.SongId));
+                    media.AddOption(":start-paused");
+                    MediaPlayer.Play(media);
+                }
             }
-
-            Queue = state.Queue.Select(ParseStoredItem).ToList();
-            RandomQueue = state.RandomQueue.Select(ParseStoredItem).ToList();
-
-            Log.Information($"Loaded a queue of {Queue.Count} (randomized: {RandomQueue.Count}) items from state");
-
-            PlayCurrent();
 
             Log.Debug($"Loading playbackstate {Enum.GetName(state.PlaybackState)}");
             switch (state.PlaybackState)
             {
                 case VLCState.Playing:
+                    PlayCurrent();
                     break;
                 case VLCState.Paused:
                     SetPause(true);
@@ -261,9 +180,10 @@ public class Player
                 MediaPlayer.Playing += SeekOnce;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            Log.Error($"Could not restore state: {ex}");
+            Log.Error("Could not restore state");
+            throw;
         }
     }
 
@@ -284,14 +204,14 @@ public class Player
     public void PlayCurrent()
     {
         Log.Debug("Playing");
-        if (CurrentPos < ActiveQueue.Count)
+        var item = CurrentSong;
+        if (item is not null)
         {
-            var song = ActiveQueue[CurrentPos.Value];
             Task.Run(() =>
             {
                 lock (MediaPlayer)
                 {
-                    Media media = new(libVLC, song.Uri);
+                    Media media = new(libVLC, database.Client.GetAudioStreamUri(item.SongId));
                     MediaPlayer.Play(media);
                 }
             });
@@ -324,100 +244,97 @@ public class Player
     /// <summary>
     /// Adds a song to queue an returns the id
     /// </summary>
-    public int Add(Uri url, BaseItemDto item, int? pos = null)
+    public int Add(Guid songId, int? pos = null)
     {
-
-        var id = AddItem(url, item, pos);
+        var id = AddItem(songId, pos);
         RaiseEvent(Subsystem.playlist);
         return id;
     }
 
-    public void AddMany((BaseItemDto, Uri)[] items, int? pos = null)
+    public void DeleteId(int id)
     {
-        foreach (var (item, url) in items)
+        Queue.RemoveById(id);
+        PlaylistVersion++;
+        RaiseEvent(Subsystem.playlist);
+    }
+
+    public void DeletePos(int pos)
+    {
+        Queue.RemoveAt(pos);
+
+        if (CurrentPos == pos)
         {
-            AddItem(url, item, pos);
-            if (pos is not null)
-            {
-                pos++;
-            }
+            PlayCurrent();
+        }
+
+        PlaylistVersion++;
+        RaiseEvent(Subsystem.playlist);
+    }
+
+    public void DeleteRange(int start, int end)
+    {
+        for (int i = start; i < end; i++)
+        {
+            Log.Debug($"Deleting item {i}");
+            DeletePos(i);
         }
         RaiseEvent(Subsystem.playlist);
     }
 
-    int AddItem(Uri url, BaseItemDto item, int? pos = null)
+    public void AddMany(Guid[] songIds, int? pos = null)
     {
-        Song song = new(url, item, nextSongId);
+        Queue.AddMany(pos, songIds);
+        PlaylistVersion++;
+        RaiseEvent(Subsystem.playlist);
+    }
 
+    int AddItem(Guid songId, int? pos = null)
+    {
+        int itemId;
         if (pos is not null)
-        {
-            Queue.Insert(pos.Value, song);
-            RandomQueue.Add(song);
-            if (CurrentPos > pos)
-            {
-                CurrentPos++;
-            }
-        }
+            itemId = Queue.AddWithPosition(pos.Value, songId);
         else
-        {
-            Queue.Add(song);
-            RandomQueue.Add(song);
-        }
+            itemId = Queue.Add(songId);
 
         PlaylistVersion++;
-        nextSongId++;
-        return song.Id;
+        return itemId;
     }
 
     public void SetCurrentPosition(int newPosition)
     {
-        CurrentPos = DenormalizePosition(newPosition);
+        CurrentPos = newPosition;
         PlayCurrent();
     }
 
     public void SetCurrentId(int id)
     {
-        var index = ActiveQueue.FindIndex(item => item.Id == id);
-        if (index == -1)
-            throw new FileNotFoundException($"Song with id {id} not found in the database");
-
-        CurrentPos = index;
+        CurrentPos = Queue.GetPositionById(id) ?? throw new FileNotFoundException($"Song with id {id} not found in the database");
         PlayCurrent();
     }
 
-    public void NextSong()
+    public void PlayNextSong() => OffsetPosition(1);
+
+    public void PreviousSong() => OffsetPosition(-1);
+
+    private void OffsetPosition(int offset)
     {
+
         if (CurrentPos is null)
         {
             throw new Exception("Not currently playing");
         }
 
-        if (CurrentPos < ActiveQueue.Count - 1)
+        var newPosition = Queue.OffsetPosition(CurrentPos.Value, offset);
+        if (newPosition is not null)
         {
-            Log.Debug("Switching to next item");
-            CurrentPos += 1;
+            Log.Debug($"Switching to item by offset {offset} at position {newPosition}");
+            CurrentPos = newPosition;
             PlayCurrent();
         }
         else
         {
             Log.Debug("End of playlist reached");
             Stop();
-        }
-    }
-
-    public void PreviousSong()
-    {
-        if (CurrentPos is null)
-        {
-            Stop();
-            throw new Exception("Not currently playing");
-        }
-
-        if (CurrentPos > 0)
-        {
-            Log.Debug("Switching to previous item");
-            CurrentPos -= 1;
-            PlayCurrent();
         }
     }
 
@@ -452,7 +369,7 @@ public class Player
 
     public void ShuffleQueue(int start, int end)
     {
-        int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
+        /*int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
 
         var shuffled = Queue.GetRange(start, end - start).OrderBy(_ => System.Random.Shared.Next());
         for (int i = 0; i < end - start; i++)
@@ -465,7 +382,8 @@ public class Player
             CurrentPos = Queue.FindIndex(item => item.Id == currentId);
 
         PlaylistVersion++;
-        RaiseEvent(Subsystem.playlist);
+        RaiseEvent(Subsystem.playlist);*/
+        throw new NotImplementedException();
     }
 
     void PlaybackChanged()
@@ -478,25 +396,6 @@ public class Player
         RaiseEvent(Subsystem.mixer);
     }
 
-    /// actual position in random queue -> position in general queue
-    int NormalizePosition(int actualPosition)
-    {
-        if (!Random)
-            return actualPosition;
-
-        var song = ActiveQueue[actualPosition];
-        return Queue.FindIndex(item => item.Id == song.Id);
-    }
-
-    /// position in general queue -> position in random queue
-    int DenormalizePosition(int apparentPosition)
-    {
-        if (!Random)
-            return apparentPosition;
-
-        var song = Queue[apparentPosition];
-        return ActiveQueue.FindIndex(item => item.Id == song.Id);
-    }
 
     void UpdateMetadata()
     {
@@ -513,14 +412,16 @@ public class Player
             var currentSong = CurrentSong;
 
             FFIMediaMetadata metadata;
-            if (currentSong is not null && currentSong.Value.Item is not null)
+
+            if (currentSong is not null)
             {
-                var item = currentSong.Value.Item;
+                var song = database.GetItem(currentSong.SongId) ?? throw new Exception("Could not find id in the database");
+
                 metadata = new()
                 {
-                    title = item.Name,
-                    album = item.Album,
-                    artist = string.Join(", ", item.Artists),
+                    title = song.Name,
+                    album = song.Album,
+                    artist = string.Join(", ", song.Artists),
                 };
             }
             else

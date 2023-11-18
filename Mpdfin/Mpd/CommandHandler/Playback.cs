@@ -61,7 +61,7 @@ partial class CommandHandler
 
     Response Seek(int songPos, double time)
     {
-        if (Player.QueuePos != songPos)
+        if (Player.CurrentPos != songPos)
         {
             Player.SetCurrentPosition(songPos);
         }
@@ -70,8 +70,9 @@ partial class CommandHandler
 
     Response SeekId(int id, double time)
     {
-        var songPos = Player.Queue.FindIndex(song => song.Id == id);
-        return Seek(songPos, time);
+        var songPos = Player.Queue.GetPositionById(id)!;
+        return Seek(songPos.Value, time);
+
     }
 
     Response SeekCur(double time)
@@ -82,7 +83,7 @@ partial class CommandHandler
 
     Response Next()
     {
-        Player.NextSong();
+        Player.PlayNextSong();
         return new();
     }
 

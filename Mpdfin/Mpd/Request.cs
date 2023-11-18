@@ -22,6 +22,8 @@ public enum Command
     previous,
     add,
     addid,
+    delete,
+    deleteid,
     clear,
     random,
     playlistinfo,
@@ -173,5 +175,20 @@ public readonly record struct Request
     public override string ToString()
     {
         return $"{Command} {string.Join(" ", Args)}";
+    }
+
+    public static (int, int) ParseRange(string input)
+    {
+        var items = input.Split(':', 2);
+        try
+        {
+            var start = int.Parse(items[0]);
+            var end = int.Parse(items[1]);
+            return (start, end);
+        }
+        catch
+        {
+            throw new Exception($"Invalid range {input}");
+        }
     }
 }

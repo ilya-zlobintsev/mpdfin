@@ -75,6 +75,8 @@ partial class CommandHandler
             Command.replay_gain_status => ReplayGainStatus(),
             Command.add => Add(request.Args[0], request.Args.ElementAtOrDefault(1)),
             Command.addid => AddId(Guid.Parse(request.Args[0]), request.Args.ElementAtOrDefault(1)),
+            Command.delete => Delete(request.Args[0]),
+            Command.deleteid => DeleteId(int.Parse(request.Args[0])),
             Command.clear => Clear(),
             Command.playlistinfo => PlaylistInfo(),
             Command.plchanges => PlChanges(long.Parse(request.Args[0])),

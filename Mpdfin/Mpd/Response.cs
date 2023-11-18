@@ -1,27 +1,21 @@
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Mpdfin.Mpd;
 
 readonly record struct Response
 {
-    public ArrayBufferWriter<byte> Contents { get; init; }
+    public ArrayBufferWriter<byte> Contents { get; } = new();
 
-    [SetsRequiredMembers]
-    public Response() => Contents = new();
+    public Response() { }
 
-    [SetsRequiredMembers]
     public Response(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
-        Contents = new();
         Add(key, value);
     }
 
-    [SetsRequiredMembers]
     public Response(ReadOnlySpan<byte> key, string value)
     {
-        Contents = new();
         Add(key, value);
     }
 

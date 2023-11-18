@@ -41,7 +41,7 @@ readonly struct ClientNotificationsReceiver
 
         foreach (var subsystem in subsystems)
         {
-            var listener = Listeners[subsystem];
+            var listener = listeners[subsystem];
             if (listener.Reader.TryRead(out Subsystem item))
             {
                 subsystemEvents.Add(item);
@@ -53,13 +53,21 @@ readonly struct ClientNotificationsReceiver
             return subsystemEvents;
         }
 
-        var tasks = subsystems.Select(s => listeners[s]
-            .Reader
-            .ReadAsync(ct)
-            .AsTask());
+        var tasks = subsystems.Select(async Task<Subsystem?> (s) =>
+        {
+            try
+            {
+                return await listeners[s].Reader.ReadAsync(ct);
+            }
+            catch (Exception)
+            {
+                return default;
+            }
+        });
 
         var finishedTask = await Task.WhenAny(tasks);
-        subsystemEvents.Add(finishedTask.Result);
+        if (finishedTask.Result.HasValue)
+            subsystemEvents.Add(finishedTask.Result.Value);
 
         return subsystemEvents;
     }

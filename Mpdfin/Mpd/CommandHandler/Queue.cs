@@ -1,4 +1,5 @@
 using System.Collections;
+using Microsoft.Win32;
 
 namespace Mpdfin.Mpd;
 
@@ -8,7 +9,7 @@ partial class CommandHandler
     {
         if (uri.Length == 0)
         {
-            var items = Db.Items.OrderItems().Select(item => (item, Db.Client.GetAudioStreamUri(item.Id))).ToArray();
+            var items = Db.Items.OrderItems().Select(song => song.Id).ToArray();
             Player.AddMany(items);
         }
         else
@@ -26,18 +27,18 @@ partial class CommandHandler
         {
             parsedPos = pos[0] switch
             {
-                '+' => Player.QueuePos + int.Parse(pos[1..]),
-                '-' => Player.QueuePos - int.Parse(pos[1..]),
+                '+' => Player.CurrentPos + int.Parse(pos[1..]),
+                '-' => Player.CurrentPos - int.Parse(pos[1..]),
                 _ => int.Parse(pos),
             };
         }
 
-        var item = Db.Items.Find(item => item.Id == uri);
+        var song = Db.Items.Find(item => item.Id == uri);
 
-        if (item is not null)
+        if (song is not null)
         {
-            var url = Db.Client.GetAudioStreamUri(item.Id);
-            var queueId = Player.Add(url, item, parsedPos);
+            var url = Db.Client.GetAudioStreamUri(song.Id);
+            var queueId = Player.Add(song.Id, parsedPos);
             return new("Id"u8, queueId.ToString());
         }
         else
@@ -46,16 +47,34 @@ partial class CommandHandler
         }
     }
 
+    Response Delete(string input)
+    {
+        if (int.TryParse(input, out int pos))
+        {
+            Player.DeletePos(pos);
+        }
+        else
+        {
+            var (start, end) = Request.ParseRange(input);
+            Player.DeleteRange(start, end);
+        }
+        return new();
+    }
+
+    Response DeleteId(int id)
+    {
+        Player.DeleteId(id);
+        return new();
+    }
+
     Response PlaylistInfo()
     {
         Response response = new();
 
-        int i = 0;
-        foreach (var song in Player.Queue)
+        foreach (var item in Player.Queue.AsEnumerable())
         {
-            var itemResponse = song.GetResponse(i);
+            var itemResponse = item.GetResponse(Db);
             response.Extend(itemResponse);
-            i++;
         }
 
         return response;
@@ -87,16 +106,7 @@ partial class CommandHandler
 
         if (range is not null)
         {
-            var items = range.Split(':', 2);
-            try
-            {
-                start = int.Parse(items[0]);
-                end = int.Parse(items[1]);
-            }
-            catch
-            {
-                throw new Exception($"Invalid range {range}");
-            }
+            (start, end) = Request.ParseRange(range);
         }
         else
         {
@@ -111,7 +121,7 @@ partial class CommandHandler
 
     Response Random(int random)
     {
-        Player.Random = random == 1;
+        Player.SetRandom(random == 1);
         return new();
     }
 }

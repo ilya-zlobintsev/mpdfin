@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LibVLCSharp.Shared;
@@ -18,8 +17,7 @@ public class PlayerState
     public int? CurrentPos;
     public int PlaylistVersion;
     public VLCState PlaybackState;
-    public List<(int, Guid)> Queue = new();
-    public List<(int, Guid)> RandomQueue = new();
+    public List<QueueItem> QueueItems = new();
     public bool Random;
     public int NextSongId;
     public double? Elapsed;

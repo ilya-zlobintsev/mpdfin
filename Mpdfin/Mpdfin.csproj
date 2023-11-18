@@ -13,7 +13,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>mpdfin</AssemblyName>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
@@ -30,10 +30,5 @@
     <PackageReference Include="LibVLCSharp" Version="3.7.0" />
     <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
-    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
-  
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
-    <DefineConstants>OS_LINUX</DefineConstants>
-  </PropertyGroup>
 </Project>

@@ -212,7 +212,11 @@ public class Player
                 lock (MediaPlayer)
                 {
                     Media media = new(libVLC, database.Client.GetAudioStreamUri(item.SongId));
-                    MediaPlayer.Play(media);
+                    var currentMedia = MediaPlayer.Media;
+                    if (currentMedia is null || currentMedia.Mrl != media.Mrl)
+                        MediaPlayer.Play(media);
+                    else
+                        MediaPlayer.Play();
                 }
             });
         }

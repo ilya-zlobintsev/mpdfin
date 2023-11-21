@@ -19,7 +19,7 @@ partial class CommandHandler
         Db = db;
         NotificationsReceiver = new();
 
-        Player.OnSubsystemUpdate += (e, args) => NotificationsReceiver.SendEvent(args.Subsystem);
+        Player.OnSubsystemUpdate += (_, subsystem) => NotificationsReceiver.SendEvent(subsystem);
         Db.OnUpdate += (e, args) => NotificationsReceiver.SendEvent(Subsystem.update);
         Db.OnDatabaseUpdated += (e, args) => NotificationsReceiver.SendEvent(Subsystem.database);
     }

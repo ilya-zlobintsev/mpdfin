@@ -18,12 +18,7 @@ public enum Subsystem
     mount,
 }
 
-public class SubsystemEventArgs : EventArgs
+public class SubsystemEventArgs(Subsystem subsystem) : EventArgs
 {
-    public readonly Subsystem Subsystem;
-
-    public SubsystemEventArgs(Subsystem subsystem)
-    {
-        Subsystem = subsystem;
-    }
+    public Subsystem Subsystem => subsystem;
 }

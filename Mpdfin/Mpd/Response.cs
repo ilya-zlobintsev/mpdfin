@@ -5,7 +5,9 @@ namespace Mpdfin.Mpd;
 
 readonly record struct Response
 {
-    public ArrayBufferWriter<byte> Contents { get; } = new();
+    public ArrayBufferWriter<byte> Buffer { get; } = new();
+
+    public ReadOnlyMemory<byte> Contents => Buffer.WrittenMemory;
 
     public Response() { }
 
@@ -41,29 +43,29 @@ readonly record struct Response
 
     public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
-        Contents.Write(key);
-        Contents.Write(": "u8);
-        Contents.Write(value);
-        Contents.Write("\n"u8);
+        Buffer.Write(key);
+        Buffer.Write(": "u8);
+        Buffer.Write(value);
+        Buffer.Write("\n"u8);
     }
 
     public readonly void AddListOk()
     {
-        Contents.Write("list_OK\n"u8);
+        Buffer.Write("list_OK\n"u8);
     }
 
     public void Extend(Response other)
     {
-        Contents.Write(other.Contents.WrittenSpan);
+        Buffer.Write(other.Buffer.WrittenSpan);
     }
 
     public ReadOnlyMemory<byte> GetMemory()
     {
-        return Contents.WrittenMemory;
+        return Buffer.WrittenMemory;
     }
 
     public override string ToString()
     {
-        return Encoding.UTF8.GetString(Contents.WrittenMemory.Span).Replace("\n", "; ");
+        return Encoding.UTF8.GetString(Buffer.WrittenMemory.Span).Replace("\n", "; ");
     }
 }

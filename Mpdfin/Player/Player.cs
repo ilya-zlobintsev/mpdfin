@@ -51,7 +51,7 @@ public class Player
     public float? Duration => CurrentPos is not null ? MediaPlayer.Length / 1000 : null;
     public float? Elapsed => Duration is not null ? Math.Abs(Duration.Value * MediaPlayer.Position) : null;
 
-    public event EventHandler<SubsystemEventArgs>? OnSubsystemUpdate;
+    public event EventHandler<Subsystem>? OnSubsystemUpdate;
     public event EventHandler? OnPlaybackStarted;
     public event EventHandler? OnPlaybackStopped;
 
@@ -143,7 +143,6 @@ public class Player
 
         try
         {
-
             if (CurrentPos is not null)
             {
                 var item = Queue.ItemAtPosition(CurrentPos.Value);
@@ -192,8 +191,7 @@ public class Player
         Log.Debug($"Raising event `{subsystem}`");
         if (OnSubsystemUpdate is not null)
         {
-            SubsystemEventArgs args = new(subsystem);
-            OnSubsystemUpdate(this, args);
+            OnSubsystemUpdate(this, subsystem);
         }
         else
         {
@@ -322,7 +320,6 @@ public class Player
 
     private void OffsetPosition(int offset)
     {
-
         if (CurrentPos is null)
         {
             throw new Exception("Not currently playing");
@@ -368,7 +365,6 @@ public class Player
                 MediaPlayer.Pause();
             }
         }
-
     }
 
     public void ShuffleQueue(int start, int end)
@@ -392,14 +388,10 @@ public class Player
 
     void PlaybackChanged()
     {
-        Task.Run(() =>
-        {
-            PlaybackState = MediaPlayer.State;
-        });
+        PlaybackState = MediaPlayer.State;
         RaiseEvent(Subsystem.player);
         RaiseEvent(Subsystem.mixer);
     }
-
 
     void UpdateMetadata()
     {

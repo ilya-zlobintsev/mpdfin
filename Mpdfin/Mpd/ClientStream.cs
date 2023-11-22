@@ -6,7 +6,7 @@ using Serilog;
 
 namespace Mpdfin.Mpd;
 
-class ClientStream
+class ClientStream : IAsyncDisposable
 {
     readonly static ImmutableArray<byte> GREETING = [.."OK MPD 0.19.0\n"u8];
     readonly static ImmutableArray<byte> OK = [.."OK\n"u8];
@@ -30,7 +30,7 @@ class ClientStream
         return Write(GREETING.AsMemory());
     }
 
-    public async Task WriteResponse(Response response)
+    public Task WriteResponse(Response response)
     {
         if (!response.Contents.IsEmpty)
         {
@@ -48,7 +48,7 @@ class ClientStream
         }
 
         response.Buffer.Write(OK.AsSpan());
-        await Write(response.Contents);
+        return Write(response.Contents);
     }
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")
@@ -57,7 +57,7 @@ class ClientStream
         return Write(Encoding.UTF8.GetBytes(line));
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         Log.Debug($"Closing connection from {TcpClient.Client.RemoteEndPoint}");
         Reader.Dispose();

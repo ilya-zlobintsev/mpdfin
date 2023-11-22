@@ -17,8 +17,3 @@ public enum Subsystem
     neighbor,
     mount,
 }
-
-public class SubsystemEventArgs(Subsystem subsystem) : EventArgs
-{
-    public Subsystem Subsystem => subsystem;
-}

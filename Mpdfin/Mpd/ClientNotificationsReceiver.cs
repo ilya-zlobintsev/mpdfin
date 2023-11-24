@@ -11,17 +11,15 @@ readonly struct ClientNotificationsReceiver
 
     public ClientNotificationsReceiver()
     {
-        Listeners = new();
-
-        foreach (var subsystem in Enum.GetValues<Subsystem>())
+        var options = new BoundedChannelOptions(1)
         {
-            var subsystemChannel = Channel.CreateBounded<Subsystem>(new BoundedChannelOptions(1)
-            {
-                SingleReader = true,
-                FullMode = BoundedChannelFullMode.DropOldest,
-            });
-            Listeners.Add(subsystem, subsystemChannel);
-        }
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropOldest,
+        };
+
+        Listeners = Enum
+            .GetValues<Subsystem>()
+            .ToDictionary(s => s, _ => Channel.CreateBounded<Subsystem>(options));
     }
 
     public void SendEvent(Subsystem subsystem)

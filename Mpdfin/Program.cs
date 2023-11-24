@@ -6,9 +6,9 @@ using Serilog;
 using System.Diagnostics.CodeAnalysis;
 using Mpdfin.Player;
 using Serilog.Events;
-using Jellyfin.Sdk;
 
 namespace Mpdfin;
+
 static class Program
 {
     [RequiresUnreferencedCode("Serialization")]
@@ -63,7 +63,6 @@ static class Program
             Log.Information($"Loaded database with {storage.Items.Count} items");
         }
 
-
         Player.Player player = new(db);
 
         // player.OnPlaybackStarted += async (_, _) =>
@@ -90,13 +89,15 @@ static class Program
 
         var lastStateUpdate = DateTime.MinValue;
         player.OnSubsystemUpdate += (_, _) => Task.Run(async () =>
-                {
-                    if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
-                    {
-                        await player.State.Save();
-                        lastStateUpdate = DateTime.UtcNow;
-                    }
-                });
+        {
+            if ((DateTime.UtcNow - lastStateUpdate) > TimeSpan.FromSeconds(10))
+            {
+                await player.State.Save();
+                lastStateUpdate = DateTime.UtcNow;
+            }
+        });
+
+        // TODO: Consider replacing with PosixSignalRegistration
         AppDomain.CurrentDomain.ProcessExit += (_, _) => player.State.Save().Wait();
         Console.CancelKeyPress += (_, _) => player.State.Save().Wait();
 

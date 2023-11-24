@@ -53,7 +53,7 @@ public class Database
                 Client.CurrentUser.Id,
                 recursive: true,
                 parentId: musicCollection.Id,
-                includeItemTypes: new[] { BaseItemKind.Audio });
+                includeItemTypes: [BaseItemKind.Audio]);
 
             Items = itemsResponse.Items.ToList();
             FilesystemRoot = Node.BuildTree(this);
@@ -62,21 +62,12 @@ public class Database
 
             await Storage.Save();
 
-            if (OnUpdate is not null)
-            {
-                OnUpdate(this, new());
-            }
-            if (OnDatabaseUpdated is not null)
-            {
-                OnDatabaseUpdated(this, new());
-            }
+            OnUpdate?.Invoke(this, EventArgs.Empty);
+            OnDatabaseUpdated?.Invoke(this, EventArgs.Empty);
         }
         else
         {
-            if (OnDatabaseUpdated is not null)
-            {
-                OnDatabaseUpdated(this, new());
-            }
+            OnDatabaseUpdated?.Invoke(this, EventArgs.Empty);
             throw new Exception("Server has no music library configured");
         }
     }

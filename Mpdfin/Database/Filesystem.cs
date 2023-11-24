@@ -50,13 +50,13 @@ public record class Node
         foreach (var artist in db.GetUniqueTagValues(Tag.Artist))
         {
             var albums = db.GetMatchingItems(Tag.Artist, artist)
-                .SelectMany(item => item.GetTagValue(Tag.Album) ?? Array.Empty<string>())
+                .SelectMany(item => item.GetTagValue(Tag.Album) ?? [])
                 .Distinct();
 
             List<Node> albumNodes = new();
             foreach (var album in albums)
             {
-                Filter[] albumFilters = new[] { new Filter(Tag.Artist, artist), new Filter(Tag.Album, album) };
+                Filter[] albumFilters = [new Filter(Tag.Artist, artist), new Filter(Tag.Album, album)];
                 var songs = db.GetMatchingItems(albumFilters);
 
                 List<Node> songNodes = new();

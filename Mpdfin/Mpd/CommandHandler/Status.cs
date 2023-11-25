@@ -78,9 +78,9 @@ partial class CommandHandler
     [Optimize]
     async Task<Response> Idle(ClientStream stream, List<string> args)
     {
-        var subsystems = args
-            .Select(arg => Enum.Parse<Subsystem>(arg, true))
-            .ToArray();
+        var subsystems = args.Count > 0
+            ? args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray()
+            : null;
 
         using CancellationTokenSource source = new();
 

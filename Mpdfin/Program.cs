@@ -21,10 +21,11 @@ catch (Exception e)
 var jellyfinConfig = config.Jellyfin;
 
 var logLevel = config.LogLevel is not null ? Enum.Parse<LogEventLevel>(config.LogLevel, true) : LogEventLevel.Information;
-Log.Logger = new LoggerConfiguration()
+using var log = new LoggerConfiguration()
     .MinimumLevel.Is(logLevel)
     .WriteTo.Console(outputTemplate: "[{Level:u}] {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
+Log.Logger = log;
 
 Database db;
 JellyfinClient client;

@@ -39,7 +39,7 @@ public class PlayerState
 
         var filePath = FilePath();
         using var file = File.OpenWrite(filePath);
-        await JsonSerializer.SerializeAsync(file, this, PlayerStateContext.Default.PlayerState);
+        await JsonSerializer.SerializeAsync(file, this, SerializerContext.Default.PlayerState);
         Log.Debug("Saved state");
     }
 

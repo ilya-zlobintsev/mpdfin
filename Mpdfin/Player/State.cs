@@ -5,10 +5,6 @@ using Serilog;
 
 namespace Mpdfin.Player;
 
-[JsonSourceGenerationOptions(IncludeFields = true)]
-[JsonSerializable(typeof(PlayerState))]
-internal partial class PlayerStateContext : JsonSerializerContext;
-
 public class PlayerState
 {
     public int Volume { get; set; }
@@ -27,7 +23,7 @@ public class PlayerState
         try
         {
             using var file = File.OpenRead(filePath);
-            return JsonSerializer.Deserialize(file, PlayerStateContext.Default.PlayerState) ?? new PlayerState();
+            return JsonSerializer.Deserialize(file, SerializerContext.Default.PlayerState) ?? new PlayerState();
         }
         catch (Exception ex)
         {

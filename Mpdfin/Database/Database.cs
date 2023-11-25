@@ -1,6 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
+using DistIL.Attributes;
 using Jellyfin.Sdk;
-using Mpdfin.Mpd;
 using Serilog;
 
 namespace Mpdfin.DB;
@@ -20,6 +19,7 @@ public class Database
     }
     public Node FilesystemRoot;
 
+    [Optimize]
     public BaseItemDto? GetItem(Guid id)
     {
         return Items.Find(item => item.Id == id);
@@ -32,7 +32,7 @@ public class Database
         FilesystemRoot = Node.BuildTree(this);
     }
 
-    [RequiresUnreferencedCode("Serialization")]
+    [Optimize]
     public async Task Update()
     {
         Log.Information("Updating database");
@@ -55,7 +55,8 @@ public class Database
                 parentId: musicCollection.Id,
                 includeItemTypes: [BaseItemKind.Audio]);
 
-            Items = itemsResponse.Items.ToList();
+            Items = itemsResponse.Items as List<BaseItemDto>
+                ?? itemsResponse.Items.ToList();
             FilesystemRoot = Node.BuildTree(this);
 
             Log.Debug($"Loaded {Items.Count} items");

@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using Jellyfin.Sdk;
+using DistIL.Attributes;
 using LibVLCSharp.Shared;
 using Serilog;
 
@@ -76,11 +75,12 @@ partial class CommandHandler
         return response;
     }
 
+    [Optimize]
     async Task<Response> Idle(ClientStream stream, List<string> args)
     {
-        var subsystems = args.Count > 0
-            ? args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray()
-            : null;
+        var subsystems = args
+            .Select(arg => Enum.Parse<Subsystem>(arg, true))
+            .ToArray();
 
         using CancellationTokenSource source = new();
 

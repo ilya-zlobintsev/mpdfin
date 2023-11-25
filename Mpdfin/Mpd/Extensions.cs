@@ -1,5 +1,5 @@
+using DistIL.Attributes;
 using Jellyfin.Sdk;
-using Mpdfin.Player;
 using Mpdfin.DB;
 using System.Text;
 
@@ -20,6 +20,7 @@ static class Extensions
         return new AsyncLock { Lock = semaphore };
     }
 
+    [Optimize]
     public static Response GetResponse(this Player.QueueItem item, Database db)
     {
         var song = db.GetItem(item.SongId) ?? throw new Exception("ID not found in database");
@@ -50,7 +51,7 @@ static class Extensions
 
         foreach (var tag in Enum.GetValues<Tag>())
         {
-            var key = Enum.GetName(tag)!.ToString();
+            var key = Enum.GetName(tag)!;
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var value = item.GetTagValue(tag);
             response.Add(keyBytes, value);
@@ -68,26 +69,36 @@ static class Extensions
 
     public static string[] ToSingleItemArray(this string value)
     {
-        return new string[1] { value };
+        return [value];
     }
 
-    public static IEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
+    [Optimize]
+    public static IOrderedEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
     {
-        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct().Order();
+        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
     }
 
-    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
+    [Optimize]
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
     {
-        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value)).OrderItems();
+        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? []).Any(itemValue => itemValue == value)).OrderItems();
     }
 
-    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
+    [Optimize]
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
     {
         return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderItems();
     }
 
+    [Optimize]
     public static IOrderedEnumerable<BaseItemDto> OrderItems(this IEnumerable<BaseItemDto> items)
     {
-        return items.OrderBy(item => (item.AlbumArtist, item.Artists.ElementAtOrDefault(0), item.Album, item.IndexNumber, item.PremiereDate, item.Name));
+        return items.OrderBy(item => (
+            item.AlbumArtist,
+            item.Artists is [var first, ..] ? first : null,
+            item.Album,
+            item.IndexNumber,
+            item.PremiereDate,
+            item.Name));
     }
 }

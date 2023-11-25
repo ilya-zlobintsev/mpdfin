@@ -1,3 +1,4 @@
+using DistIL.Attributes;
 using Jellyfin.Sdk;
 using Mpdfin.Mpd;
 using Serilog;
@@ -33,19 +34,13 @@ public record class Node
 
     public Node? Navigate(string name)
     {
-        foreach (var child in Children)
-        {
-            if (child.Name == name)
-            {
-                return child;
-            }
-        }
-        return null;
+        return Children.Find(child => child.Name == name);
     }
 
+    [Optimize]
     public static Node BuildTree(Database db)
     {
-        List<Node> rootNodes = new();
+        List<Node> rootNodes = [];
 
         foreach (var artist in db.GetUniqueTagValues(Tag.Artist))
         {
@@ -53,20 +48,18 @@ public record class Node
                 .SelectMany(item => item.GetTagValue(Tag.Album) ?? [])
                 .Distinct();
 
-            List<Node> albumNodes = new();
-            foreach (var album in albums)
-            {
-                Filter[] albumFilters = [new Filter(Tag.Artist, artist), new Filter(Tag.Album, album)];
-                var songs = db.GetMatchingItems(albumFilters);
-
-                List<Node> songNodes = new();
-                foreach (var song in songs)
+            var albumNodes = albums
+                .Select(album =>
                 {
-                    songNodes.Add(new(song));
-                }
+                    var songs = db.GetMatchingItems(
+                    [
+                        new(Tag.Artist, artist),
+                        new(Tag.Album, album)
+                    ]);
 
-                albumNodes.Add(new(album, songNodes));
-            }
+                    return new Node(album, songs.Select(song => new Node(song)).ToList());
+                })
+                .ToList();
 
             rootNodes.Add(new(artist, albumNodes));
         }

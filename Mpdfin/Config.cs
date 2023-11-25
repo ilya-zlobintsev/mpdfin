@@ -1,36 +1,17 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Mpdfin;
 
-[RequiresUnreferencedCode("Serialization")]
-class Config
+record Config(JellyfinConfig Jellyfin, string? LogLevel, int? Port)
 {
-    public required JellyfinConfig Jellyfin { get; set; }
-    public string? LogLevel { get; init; }
-    public int? Port { get; init; }
-
-    public static string GetPath()
-    {
-        var configDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        return Path.Join(configDir, "mpdfin", "config.json");
-    }
-
     public static Config Load()
     {
-        var configFilePath = GetPath();
-        var contents = File.ReadAllText(configFilePath);
-        JsonSerializerOptions options = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-        return JsonSerializer.Deserialize<Config>(contents, options)!;
+        var configDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var configFilePath = Path.Join(configDir, "mpdfin", "config.json");
+
+        var contents = File.ReadAllBytes(configFilePath);
+        return JsonSerializer.Deserialize(contents, SerializerContext.Default.Config)!;
     }
 }
 
-class JellyfinConfig
-{
-    public required string ServerUrl { get; init; }
-    public required string Username { get; init; }
-    public required string Password { get; init; }
-}
+record JellyfinConfig(string ServerUrl, string Username, string Password);

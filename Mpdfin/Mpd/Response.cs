@@ -54,9 +54,10 @@ readonly record struct Response
         Buffer.Write("list_OK\n"u8);
     }
 
-    public void Extend(Response other)
+    public Response Extend(Response other)
     {
         Buffer.Write(other.Buffer.WrittenSpan);
+        return this;
     }
 
     public ReadOnlyMemory<byte> GetMemory()

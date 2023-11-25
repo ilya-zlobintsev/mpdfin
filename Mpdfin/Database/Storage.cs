@@ -13,7 +13,7 @@ public class DatabaseStorage
 
     public DatabaseStorage(AuthenticationResult auth)
     {
-        Items = new();
+        Items = [];
         AuthenticationResult = auth;
     }
 
@@ -24,33 +24,32 @@ public class DatabaseStorage
         AuthenticationResult = authenticationResult;
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     public static DatabaseStorage? Load()
     {
         var filePath = FilePath();
 
         try
         {
-            var contents = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<DatabaseStorage>(contents);
+            using var file = File.OpenRead(filePath);
+            return JsonSerializer.Deserialize(file, SerializerContext.Default.DatabaseStorage);
         }
         catch (Exception ex)
         {
-            if (ex is not FileNotFoundException && ex is not DirectoryNotFoundException)
+            if (ex is not (FileNotFoundException or DirectoryNotFoundException))
                 Log.Error($"Could not load local database: {ex}");
 
             return null;
         }
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     public async Task Save()
     {
         Directory.CreateDirectory(DataDir());
 
         var filePath = FilePath();
-        var contents = JsonSerializer.Serialize(this);
-        await File.WriteAllTextAsync(filePath, contents);
+        using var file = File.OpenWrite(filePath);
+        await JsonSerializer.SerializeAsync(file, this, SerializerContext.Default.DatabaseStorage);
+
         Log.Information("Saved database file");
     }
 

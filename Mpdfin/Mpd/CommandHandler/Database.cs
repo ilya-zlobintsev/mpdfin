@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using DistIL.Attributes;
 using Mpdfin.DB;
 using Serilog;
 
@@ -7,6 +8,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
+    [Optimize]
     Response List(Tag tag)
     {
         var values = Db.GetUniqueTagValues(tag);
@@ -23,21 +25,20 @@ partial class CommandHandler
         return response;
     }
 
+    [Optimize]
     Response Find(List<Filter> filters)
     {
-        Response response = new();
-
-        foreach (var item in Db.GetMatchingItems(filters.ToArray()))
-        {
-            response.Extend(item.GetResponse());
-        }
-
-        return response;
+        return Db
+            .GetMatchingItems([..filters])
+            .Aggregate(new Response(), (response, item) => response.Extend(item.GetResponse()));
     }
 
+    [Optimize]
     Response LsInfo(string? uri)
     {
-        var parts = uri?.Split("/").Where(item => item.Length > 0).ToArray() ?? Array.Empty<string>();
+        var parts = uri?
+            .Split("/", StringSplitOptions.RemoveEmptyEntries)
+            .ToArray() ?? [];
 
         var rootNode = Db.FilesystemRoot;
         StringBuilder pathBuilder = new();
@@ -126,13 +127,12 @@ partial class CommandHandler
         return response;
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     Response Update()
     {
         UpdateJobId++;
         Updating = true;
 
-        new Task(async () =>
+        _ = Task.Run(async () =>
         {
             try
             {
@@ -146,7 +146,7 @@ partial class CommandHandler
             {
                 Updating = false;
             }
-        }).Start();
+        });
 
         return new("updating_db"u8, UpdateJobId.ToString());
     }

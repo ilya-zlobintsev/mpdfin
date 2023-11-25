@@ -31,7 +31,8 @@ public class DatabaseStorage
         try
         {
             using var file = File.OpenRead(filePath);
-            return JsonSerializer.Deserialize(file, SerializerContext.Default.DatabaseStorage);
+            return JsonSerializer.Deserialize(
+                file, DatabaseSerializerContext.Default.DatabaseStorage);
         }
         catch (Exception ex)
         {
@@ -48,7 +49,8 @@ public class DatabaseStorage
 
         var filePath = FilePath();
         using var file = File.OpenWrite(filePath);
-        await JsonSerializer.SerializeAsync(file, this, SerializerContext.Default.DatabaseStorage);
+        await JsonSerializer.SerializeAsync(
+            file, this, DatabaseSerializerContext.Default.DatabaseStorage);
 
         Log.Information("Saved database file");
     }

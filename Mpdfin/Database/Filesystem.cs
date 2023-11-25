@@ -14,7 +14,7 @@ public record class Node
     public Node(string name)
     {
         Name = Sanitize(name);
-        Children = new();
+        Children = [];
     }
 
     public Node(BaseItemDto item) : this(item.Name)

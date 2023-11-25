@@ -10,7 +10,7 @@ public class PlayerState
     public int? CurrentPos { get; set; }
     public int PlaylistVersion { get; set; }
     public VLCState PlaybackState { get; init; }
-    public List<QueueItem> QueueItems { get; init; } = [];
+    public required List<QueueItem> QueueItems { get; init; }
     public bool Random { get; init; }
     public int NextSongId { get; init; }
     public double? Elapsed { get; init; }
@@ -22,7 +22,8 @@ public class PlayerState
         try
         {
             using var file = File.OpenRead(filePath);
-            return JsonSerializer.Deserialize(file, SerializerContext.Default.PlayerState) ?? new PlayerState();
+            return JsonSerializer.Deserialize(file, SerializerContext.Default.PlayerState)
+                ?? new PlayerState { QueueItems = [] };
         }
         catch (Exception ex)
         {

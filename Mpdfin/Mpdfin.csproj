@@ -23,7 +23,7 @@
     <!-- Whatever Jellyfin.Sdk is doing, it makes DistIL really unhappy. -->
     <!-- When the new update drops, try to re-enable for free stonks performance of LINQ -->
     <!-- <DistilAllMethods>true</DistilAllMethods> -->
-    <!-- <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault> -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>

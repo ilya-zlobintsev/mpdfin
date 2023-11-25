@@ -24,7 +24,6 @@ partial class CommandHandler
         Db.OnDatabaseUpdated += (e, args) => NotificationsReceiver.SendEvent(Subsystem.database);
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     public async Task HandleStream(ClientStream stream)
     {
         Request? request;
@@ -47,7 +46,6 @@ partial class CommandHandler
         }
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     async Task<Response?> HandleRequest(Request request, ClientStream stream)
     {
         return request.Command switch
@@ -95,10 +93,9 @@ partial class CommandHandler
         };
     }
 
-    [RequiresUnreferencedCode("Serialization")]
     async Task<Response> HandleCommandList(ClientStream stream, bool printOk)
     {
-        List<Request> requestList = new();
+        List<Request> requestList = [];
 
         bool end = false;
         Log.Debug("Processing command list");

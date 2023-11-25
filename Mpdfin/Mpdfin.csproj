@@ -19,12 +19,10 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
     <!-- <NoWarn>IL2026</NoWarn> -->
     <!-- Whatever Jellyfin.Sdk is doing, it makes DistIL really unhappy. -->
     <!-- When the new update drops, try to re-enable for free stonks performance of LINQ -->
     <!-- <DistilAllMethods>true</DistilAllMethods> -->
-    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>

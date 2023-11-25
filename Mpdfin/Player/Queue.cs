@@ -110,7 +110,7 @@ public class Queue
         }
     }
 
-    public QueueItem? ItemAtPosition(int pos) => Items.FirstOrDefault(item => item.Position == pos);
+    public QueueItem? ItemAtPosition(int pos) => Items.Find(item => item.Position == pos);
 
     public IEnumerable<QueueItem> AsEnumerable() => Items.OrderBy(item => item.Position);
 }

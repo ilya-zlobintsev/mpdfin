@@ -8,6 +8,7 @@ namespace Mpdfin;
 [JsonSerializable(typeof(PlayerState))]
 [JsonSerializable(typeof(DatabaseStorage))]
 [JsonSerializable(typeof(Jellyfin.Sdk.QueueItem))]
+[JsonSerializable(typeof(Mpdfin.Player.QueueItem))]
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     UseStringEnumConverter = true)]

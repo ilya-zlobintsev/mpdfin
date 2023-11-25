@@ -4,7 +4,6 @@ namespace Mpdfin.Player;
 
 public class Queue
 {
-
     public List<QueueItem> Items { get; private set; }
 
     public bool Random { get; private set; }
@@ -24,15 +23,16 @@ public class Queue
 
     public void SetRandom(bool value)
     {
-
         if (Random == value)
             return;
 
         if (value)
-            Items = [.. Items.OrderBy(_ => System.Random.Shared.Next())];
+        {
+            Items = [..Items.OrderBy(_ => System.Random.Shared.Next())];
+        }
         else
         {
-            Items = [.. Items.OrderBy(item => item.Position)];
+            Items = [..Items.OrderBy(item => item.Position)];
             RecalculatePositions();
         }
 
@@ -82,7 +82,7 @@ public class Queue
         RecalculatePositions();
     }
 
-    public QueueItem? GetById(int id) => Items.FirstOrDefault(item => item.Id == id);
+    public QueueItem? GetById(int id) => Items.Find(item => item.Id == id);
 
     public int? GetPositionById(int id) => GetById(id)?.Position;
 
@@ -95,7 +95,9 @@ public class Queue
             return nextIndex < Count && nextIndex >= 0 ? Items[nextIndex.Value].Position : null;
         }
         else
+        {
             return null;
+        }
     }
 
     private int? GetIndexByPosition(int pos) => Items.FindIndex(item => item.Position == pos);

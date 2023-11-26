@@ -371,7 +371,9 @@ public class Player
 
     public void ShuffleQueue(Range queueSlice)
     {
+        var currentSong = CurrentSong;
         Queue.Shuffle(queueSlice);
+        CurrentPos = currentSong?.Position;
 
         PlaylistVersion++;
         RaiseEvent(Subsystem.playlist);

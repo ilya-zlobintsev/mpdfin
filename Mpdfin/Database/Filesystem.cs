@@ -1,11 +1,10 @@
 using DistIL.Attributes;
 using Jellyfin.Sdk;
 using Mpdfin.Mpd;
-using Serilog;
 
 namespace Mpdfin.DB;
 
-public record class Node
+public record Node
 {
     public string? Name { get; }
     public Guid? ItemId { get; }

@@ -101,8 +101,7 @@ partial class CommandHandler
 
     Response Shuffle(string? range)
     {
-        int start;
-        int end;
+        int start, end;
 
         if (range is not null)
         {

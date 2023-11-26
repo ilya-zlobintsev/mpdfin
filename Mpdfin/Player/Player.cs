@@ -1,5 +1,5 @@
-using System.Data.Common;
-using Jellyfin.Sdk;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
 using Mpdfin.DB;
@@ -369,21 +369,12 @@ public class Player
 
     public void ShuffleQueue(int start, int end)
     {
-        /*int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
+        var queue = CollectionsMarshal.AsSpan(Queue.Items)[start..end];
 
-        var shuffled = Queue.GetRange(start, end - start).OrderBy(_ => System.Random.Shared.Next());
-        for (int i = 0; i < end - start; i++)
-        {
-            var item = shuffled.ElementAt(i);
-            Queue[start + i] = item;
-        }
-
-        if (currentId is not null)
-            CurrentPos = Queue.FindIndex(item => item.Id == currentId);
-
+        // Cryptographically random playlist shuffle because we can
+        RandomNumberGenerator.Shuffle(queue);
         PlaylistVersion++;
-        RaiseEvent(Subsystem.playlist);*/
-        throw new NotImplementedException();
+        RaiseEvent(Subsystem.playlist);
     }
 
     void PlaybackChanged()

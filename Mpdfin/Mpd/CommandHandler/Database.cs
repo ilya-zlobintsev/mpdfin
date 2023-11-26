@@ -36,9 +36,7 @@ partial class CommandHandler
     [Optimize]
     Response LsInfo(string? uri)
     {
-        var parts = uri?
-            .Split("/", StringSplitOptions.RemoveEmptyEntries)
-            .ToArray() ?? [];
+        var parts = uri?.Split("/", StringSplitOptions.RemoveEmptyEntries) ?? [];
 
         var rootNode = Db.FilesystemRoot;
         StringBuilder pathBuilder = new();

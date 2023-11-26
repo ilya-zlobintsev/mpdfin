@@ -179,16 +179,16 @@ public readonly record struct Request
 
     public static (int, int) ParseRange(string input)
     {
-        var items = input.Split(':', 2);
+        var separator = input.IndexOf(':');
         try
         {
-            var start = int.Parse(items[0]);
-            var end = int.Parse(items[1]);
+            var start = int.Parse(input.AsSpan(0, separator));
+            var end = int.Parse(input.AsSpan(separator + 1));
             return (start, end);
         }
-        catch
+        catch (Exception ex)
         {
-            throw new Exception($"Invalid range {input}");
+            throw new FormatException($"Invalid range {input}", ex);
         }
     }
 }

@@ -46,7 +46,7 @@ partial class CommandHandler
         }
     }
 
-    async Task<Response?> HandleRequest(Request request, ClientStream stream)
+    async ValueTask<Response?> HandleRequest(Request request, ClientStream stream)
     {
         return request.Command switch
         {

@@ -55,14 +55,9 @@ public readonly record struct Request
 
     static Command ParseCommand(string rawCommand)
     {
-        if (!int.TryParse(rawCommand, out int _) && Enum.TryParse(rawCommand, false, out Command command))
-        {
-            return command;
-        }
-        else
-        {
-            throw new Exception($"unknown command {rawCommand}");
-        }
+        return !int.TryParse(rawCommand, out int _)
+            && Enum.TryParse(rawCommand, false, out Command command)
+                ? command : throw new Exception($"unknown command {rawCommand}");
     }
 
     public Request(string raw)
@@ -92,7 +87,7 @@ public readonly record struct Request
             Command = ParseCommand(rawCommandBuilder.ToString());
         }
 
-        Args = new();
+        Args = [];
         StringBuilder currentArgBuilder = new();
 
         for (; i < chars.Length; i++)
@@ -177,18 +172,14 @@ public readonly record struct Request
         return $"{Command} {string.Join(" ", Args)}";
     }
 
-    public static (int, int) ParseRange(string input)
+    public static Range ParseRange(string input)
     {
         var separator = input.IndexOf(':');
-        try
-        {
-            var start = int.Parse(input.AsSpan(0, separator));
-            var end = int.Parse(input.AsSpan(separator + 1));
-            return (start, end);
-        }
-        catch (Exception ex)
-        {
-            throw new FormatException($"Invalid range {input}", ex);
-        }
+
+        var result =
+            int.TryParse(input.AsSpan(0, separator), out var start) &
+            int.TryParse(input.AsSpan(separator + 1), out var end);
+
+        return result ? new(start, end) : throw new FormatException($"Invalid range {input}");
     }
 }

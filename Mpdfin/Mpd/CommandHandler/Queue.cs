@@ -55,8 +55,8 @@ partial class CommandHandler
         }
         else
         {
-            var (start, end) = Request.ParseRange(input);
-            Player.DeleteRange(start, end);
+            var queueSlice = Request.ParseRange(input);
+            Player.DeleteRange(queueSlice);
         }
         return new();
     }
@@ -83,14 +83,7 @@ partial class CommandHandler
     Response PlChanges(long version)
     {
         // Naive implementation
-        if (version < Player.PlaylistVersion)
-        {
-            return PlaylistInfo();
-        }
-        else
-        {
-            return new();
-        }
+        return version < Player.PlaylistVersion ? PlaylistInfo() : new();
     }
 
     Response Clear()
@@ -101,19 +94,11 @@ partial class CommandHandler
 
     Response Shuffle(string? range)
     {
-        int start, end;
+        var queueSlice = range != null
+            ? Request.ParseRange(range)
+            : new(0, Player.Queue.Count - 1);
 
-        if (range is not null)
-        {
-            (start, end) = Request.ParseRange(range);
-        }
-        else
-        {
-            start = 0;
-            end = Player.Queue.Count - 1;
-        }
-
-        Player.ShuffleQueue(start, end);
+        Player.ShuffleQueue(queueSlice);
 
         return new();
     }

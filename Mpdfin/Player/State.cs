@@ -10,7 +10,7 @@ public class PlayerState
     public int? CurrentPos { get; set; }
     public int PlaylistVersion { get; set; }
     public VLCState PlaybackState { get; init; }
-    public required List<QueueItem> QueueItems { get; init; }
+    public required IReadOnlyList<QueueItem> QueueItems { get; init; }
     public bool Random { get; init; }
     public int NextSongId { get; init; }
     public double? Elapsed { get; init; }

@@ -61,12 +61,9 @@ partial class CommandHandler
             }
             else if (node.Name is not null)
             {
-                string value;
-                if (!string.IsNullOrEmpty(path))
-                    value = $"{path}/{node.Name}";
-                else
-                    value = node.Name;
-
+                var value = !string.IsNullOrEmpty(path)
+                    ? $"{path}/{node.Name}"
+                    : node.Name;
                 response.Add("directory"u8, value);
             }
         }

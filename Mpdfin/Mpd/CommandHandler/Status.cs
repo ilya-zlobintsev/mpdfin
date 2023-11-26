@@ -64,6 +64,7 @@ partial class CommandHandler
         }
     }
 
+    [Optimize]
     Response Stats()
     {
         Response response = new();

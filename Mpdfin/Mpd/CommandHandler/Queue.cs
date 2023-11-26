@@ -1,10 +1,10 @@
-using System.Collections;
-using Microsoft.Win32;
+using DistIL.Attributes;
 
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
+    [Optimize]
     Response Add(string uri, string? pos)
     {
         if (uri.Length == 0)
@@ -27,8 +27,8 @@ partial class CommandHandler
         {
             parsedPos = pos[0] switch
             {
-                '+' => Player.CurrentPos + int.Parse(pos[1..]),
-                '-' => Player.CurrentPos - int.Parse(pos[1..]),
+                '+' => Player.CurrentPos + int.Parse(pos.AsSpan(1)),
+                '-' => Player.CurrentPos - int.Parse(pos.AsSpan(1)),
                 _ => int.Parse(pos),
             };
         }

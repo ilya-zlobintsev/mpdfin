@@ -62,13 +62,16 @@ public class Queue
         Log.Debug($"Adding {songIds.Length} items");
 
         var pos = startPos ?? _items.Count;
-        foreach (var songId in songIds)
+        var index = pos;
+
+        var items = songIds.Select(songId => new QueueItem
         {
-            var item = new QueueItem { Position = pos, Id = NextItemId, SongId = songId };
-            _items.Insert(pos, item);
-            NextItemId++;
-            pos++;
-        }
+            Position = pos++,
+            Id = NextItemId++,
+            SongId = songId
+        });
+
+        _items.InsertRange(index, items);
 
         RecalculatePositions();
     }

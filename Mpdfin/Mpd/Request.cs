@@ -53,7 +53,7 @@ public readonly record struct Request
     public readonly Command Command;
     public readonly List<string> Args;
 
-    static Command ParseCommand(string rawCommand)
+    static Command ParseCommand(ReadOnlySpan<char> rawCommand)
     {
         return !int.TryParse(rawCommand, out int _)
             && Enum.TryParse(rawCommand, false, out Command command)
@@ -62,37 +62,17 @@ public readonly record struct Request
 
     public Request(string raw)
     {
-        var chars = raw.ToCharArray();
+        var i = raw.IndexOf(' ');
+        i = i >= 0 ? i : raw.Length;
 
-        StringBuilder rawCommandBuilder = new();
-        int i;
-
-        for (i = 0; i < chars.Length; i++)
-        {
-            var c = chars[i];
-            if (c == ' ')
-            {
-                var rawCommand = rawCommandBuilder.ToString();
-                Command = ParseCommand(rawCommand);
-                break;
-            }
-            else
-            {
-                rawCommandBuilder.Append(c);
-            }
-        }
-
-        if (i == chars.Length)
-        {
-            Command = ParseCommand(rawCommandBuilder.ToString());
-        }
+        Command = ParseCommand(raw.AsSpan(0, i));
 
         Args = [];
-        StringBuilder currentArgBuilder = new();
+        StringBuilder currentArgBuilder = new(raw.Length - i);
 
-        for (; i < chars.Length; i++)
+        for (; i < raw.Length; i++)
         {
-            var c = chars[i];
+            var c = raw[i];
             switch (c)
             {
                 case '"':
@@ -102,9 +82,9 @@ public readonly record struct Request
                     }
 
                     var exitLoop = false;
-                    for (i++; i < chars.Length && !exitLoop; i++)
+                    for (i++; i < raw.Length && !exitLoop; i++)
                     {
-                        var innerC = chars[i];
+                        var innerC = raw[i];
 
                         switch (innerC)
                         {
@@ -117,9 +97,9 @@ public readonly record struct Request
                             case '\\':
                                 i++;
 
-                                if (i < chars.Length)
+                                if (i < raw.Length)
                                 {
-                                    var escapedChar = chars[i];
+                                    var escapedChar = raw[i];
                                     currentArgBuilder.Append(escapedChar);
                                 }
                                 else
@@ -144,9 +124,9 @@ public readonly record struct Request
                 case '\\':
                     i++;
 
-                    if (i < chars.Length)
+                    if (i < raw.Length)
                     {
-                        var escapedChar = chars[i];
+                        var escapedChar = raw[i];
                         currentArgBuilder.Append(escapedChar);
                     }
                     else

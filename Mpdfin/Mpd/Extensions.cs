@@ -37,10 +37,9 @@ static class Extensions
     /// </summary>
     public static double? GetDuration(this BaseItemDto item)
     {
-        if (item.RunTimeTicks is not null)
-            return (double)item.RunTimeTicks / 10000000;
-        else
-            return null;
+        return item.RunTimeTicks is not null
+            ? (double)item.RunTimeTicks / 10000000
+            : null;
     }
 
     public static Response GetResponse(this BaseItemDto item)
@@ -49,9 +48,8 @@ static class Extensions
 
         response.Add("file"u8, item.Id.ToString());
 
-        foreach (var tag in Enum.GetValues<Tag>())
+        foreach (var (key, tag) in Constants.TagNames.Zip(Constants.TagValues))
         {
-            var key = Enum.GetName(tag)!;
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var value = item.GetTagValue(tag);
             response.Add(keyBytes, value);

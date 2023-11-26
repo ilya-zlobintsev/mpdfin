@@ -1,6 +1,5 @@
 using Serilog;
 using Mpdfin.DB;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Mpdfin.Mpd;
 

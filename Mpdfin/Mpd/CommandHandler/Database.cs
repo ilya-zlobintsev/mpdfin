@@ -1,7 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using DistIL.Attributes;
-using Mpdfin.DB;
 using Serilog;
 
 namespace Mpdfin.Mpd;
@@ -69,55 +67,6 @@ partial class CommandHandler
         }
 
         Log.Debug($"Navigated to {rootNode.Name}");
-
-        /*switch (parts.Length)
-        {
-            case 0:
-                {
-                    foreach (var artist in Db.GetUniqueTagValues(Tag.Artist))
-                    {
-                        if (artist is not null)
-                            response.Add("directory"u8, artist);
-                    }
-
-                    foreach (var item in Db.GetMatchingItems(Tag.Artist, null))
-                    {
-                        response.Extend(item.GetResponse());
-                    }
-
-                    break;
-                }
-            case 1:
-                {
-                    var artist = parts[0];
-                    var albums = Db.GetMatchingItems(Tag.Artist, artist).SelectMany(item => item.GetTagValue(Tag.Album) ?? Array.Empty<string>()).Distinct();
-                    foreach (var album in albums)
-                    {
-                        if (artist is not null && album is not null)
-                            response.Add("directory"u8, $"{artist}/{album}");
-                    }
-
-                    var filters = new Filter[] { new(Tag.Artist, artist), new(Tag.Album, null) };
-                    var itemsWithoutAlbum = Db.GetMatchingItems(filters);
-                    foreach (var item in itemsWithoutAlbum)
-                    {
-                        response.Extend(item.GetResponse());
-                    }
-                    break;
-                }
-            case 2:
-                {
-                    var filters = new Filter[] { new(Tag.Artist, parts[0]), new(Tag.Album, parts[1]) };
-                    foreach (var item in Db.GetMatchingItems(filters))
-                    {
-                        response.Extend(item.GetResponse());
-                    }
-
-                    break;
-                }
-            default:
-                throw new Exception("Path not found");
-        }*/
 
         return response;
     }

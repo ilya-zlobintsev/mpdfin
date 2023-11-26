@@ -1,18 +1,17 @@
+using DistIL.Attributes;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    static Response Commands()
-    {
-        Response response = new();
-
-        foreach (var command in Enum.GetValues<Command>())
+    [Optimize]
+    static Response Commands() => Constants
+        .CommandNames
+        .Aggregate(new Response(), (response, command) =>
         {
-            response.Add("command"u8, command.ToString());
-        }
-
-        return response;
-    }
+            response.Add("command"u8, command);
+            return response;
+        });
 
     static Response Decoders()
     {

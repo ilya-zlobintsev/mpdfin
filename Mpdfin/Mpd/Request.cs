@@ -51,16 +51,16 @@ public enum Command
 public readonly record struct Request
 {
     public readonly Command Command;
-    public readonly List<string> Args;
+    public readonly List<U8String> Args;
 
-    static Command ParseCommand(ReadOnlySpan<char> rawCommand)
+    static Command ParseCommand(ReadOnlySpan<byte> rawCommand)
     {
         return !int.TryParse(rawCommand, out int _)
             && Enum.TryParse(rawCommand, false, out Command command)
                 ? command : throw new Exception($"unknown command {rawCommand}");
     }
 
-    public Request(string raw)
+    public Request(U8String raw)
     {
         var i = raw.IndexOf(' ');
         i = i >= 0 ? i : raw.Length;
@@ -75,7 +75,7 @@ public readonly record struct Request
             var c = raw[i];
             switch (c)
             {
-                case '"':
+                case (byte)'"':
                     if (currentArgBuilder.Length > 0)
                     {
                         throw new Exception($"Unexpected data before quote: {currentArgBuilder}");
@@ -88,13 +88,13 @@ public readonly record struct Request
 
                         switch (innerC)
                         {
-                            case '"':
+                            case (byte)'"':
                                 var arg = currentArgBuilder.ToString();
                                 Args.Add(arg);
                                 currentArgBuilder.Clear();
                                 exitLoop = true;
                                 break;
-                            case '\\':
+                            case (byte)'\\':
                                 i++;
 
                                 if (i < raw.Length)
@@ -113,7 +113,7 @@ public readonly record struct Request
                         }
                     }
                     break;
-                case ' ':
+                case (byte)' ':
                     if (currentArgBuilder.Length > 0)
                     {
                         var arg = currentArgBuilder.ToString();
@@ -121,7 +121,7 @@ public readonly record struct Request
                         currentArgBuilder.Clear();
                     }
                     break;
-                case '\\':
+                case (byte)'\\':
                     i++;
 
                     if (i < raw.Length)
@@ -152,13 +152,13 @@ public readonly record struct Request
         return $"{Command} {string.Join(" ", Args)}";
     }
 
-    public static Range ParseRange(string input)
+    public static Range ParseRange(U8String input)
     {
-        var separator = input.IndexOf(':');
+        var (startValue, endValue) = input.SplitFirst(':');
 
         var result =
-            int.TryParse(input.AsSpan(0, separator), out var start) &
-            int.TryParse(input.AsSpan(separator + 1), out var end);
+            int.TryParse(startValue, out var start) &
+            int.TryParse(endValue, out var end);
 
         return result ? new(start, end) : throw new FormatException($"Invalid range {input}");
     }

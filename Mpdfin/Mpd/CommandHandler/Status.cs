@@ -11,57 +11,49 @@ partial class CommandHandler
         Response response = new();
 
         response.Add("repeat"u8, "0"u8);
-        response.Add("random"u8, Convert.ToUInt32(Player.Queue.Random).ToString());
+        response.Add("random"u8, Player.Queue.Random ? "1"u8 : "0"u8);
         response.Add("single"u8, "0"u8);
         response.Add("consume"u8, "0"u8);
 
         if (Player.CurrentPos is not null)
-            response.Add("song"u8, Player.CurrentPos.Value.ToString());
+            response.Add("song"u8, Player.CurrentPos.Value);
 
         if (Player.CurrentSong is not null)
-            response.Add("songid"u8, Player.CurrentSong.Id.ToString());
+            response.Add("songid"u8, Player.CurrentSong.Id);
 
         var nextSong = Player.NextSong;
         if (nextSong is not null)
         {
-            response.Add("nextsong"u8, Player.NextPos.ToString());
-            response.Add("nextsongid"u8, nextSong.SongId.ToString());
+            response.Add("nextsong"u8, Player.NextPos!.Value);
+            response.Add("nextsongid"u8, nextSong.SongId);
         }
 
         if (Player.Elapsed is not null)
         {
-            response.Add("elapsed"u8, Player.Elapsed.Value.ToString());
-            response.Add("time"u8, $"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}");
-            response.Add("duration"u8, Player.Duration!.Value.ToString());
+            response.Add("elapsed"u8, Player.Elapsed.Value);
+            response.Add("time"u8, u8($"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}"));
+            response.Add("duration"u8, Player.Duration!.Value);
         }
 
-        response.Add("volume"u8, Player.Volume.ToString());
+        response.Add("volume"u8, Player.Volume);
         response.Add("state"u8, Player.PlaybackState switch
         {
             VLCState.Playing => "play"u8,
             VLCState.Paused => "pause"u8,
             _ => "stop"u8,
         });
-        response.Add("playlist"u8, Player.PlaylistVersion.ToString());
-        response.Add("playlistlength"u8, Player.Queue.Count.ToString());
+        response.Add("playlist"u8, Player.PlaylistVersion);
+        response.Add("playlistlength"u8, Player.Queue.Count);
 
         if (Updating)
-            response.Add("updating_db"u8, UpdateJobId.ToString());
+            response.Add("updating_db"u8, UpdateJobId);
 
         return response;
     }
 
     Response CurrentSong()
     {
-        var currentSong = Player.CurrentSong;
-        if (currentSong is not null)
-        {
-            return currentSong.GetResponse(Db);
-        }
-        else
-        {
-            return new();
-        }
+        return Player.CurrentSong?.GetResponse(Db) ?? new();
     }
 
     [Optimize]
@@ -69,9 +61,9 @@ partial class CommandHandler
     {
         Response response = new();
 
-        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count().ToString());
-        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count().ToString());
-        response.Add("songs"u8, Db.Items.Count.ToString());
+        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count());
+        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count());
+        response.Add("songs"u8, Db.Items.Count);
 
         return response;
     }
@@ -99,21 +91,15 @@ partial class CommandHandler
 
                 foreach (var subsystem in notificationTask.Result)
                 {
-                    response.Add("changed"u8, Enum.GetName(subsystem));
+                    response.Add("changed"u8, u8(Enum.GetName(subsystem)!));
                 }
 
                 return response;
             }
             else
             {
-                if (incomingCommandTask.Result?.Command == Command.noidle || incomingCommandTask.Result is null)
-                {
-                    return new();
-                }
-                else
-                {
-                    throw new Exception($"Only `noidle` can be called when idling, got `{incomingCommandTask.Result?.Command}`");
-                }
+                return incomingCommandTask.Result is null or { Command: Command.noidle }
+                    ? new() : throw new Exception($"Only `noidle` can be called when idling, got `{incomingCommandTask.Result?.Command}`");
             }
         }
         catch (Exception ex)

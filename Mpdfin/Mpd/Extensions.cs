@@ -65,9 +65,14 @@ static class Extensions
         return response;
     }
 
-    public static string[] ToSingleItemArray(this string value)
+    public static U8String[] ToSingleItemArray(this string value)
     {
-        return [value];
+        return [u8(value)];
+    }
+
+    public static U8String[] ToSingleItemArray(this U8String value)
+    {
+        return [u8(value)];
     }
 
     [Optimize]

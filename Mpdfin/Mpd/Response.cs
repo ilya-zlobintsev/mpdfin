@@ -9,28 +9,12 @@ readonly record struct Response
 
     public ReadOnlyMemory<byte> Contents => Buffer.WrittenMemory;
 
-    public Response() { }
-
     public Response(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Add(key, value);
     }
 
-    public Response(ReadOnlySpan<byte> key, string value)
-    {
-        Add(key, value);
-    }
-
-    public void Add(ReadOnlySpan<byte> key, string? value)
-    {
-        if (value is not null)
-        {
-            var data = Encoding.UTF8.GetBytes(value);
-            Add(key, data);
-        }
-    }
-
-    public void Add(ReadOnlySpan<byte> key, IReadOnlyList<string>? values)
+    public void Add(ReadOnlySpan<byte> key, ICollection<U8String>? values)
     {
         if (values is not null)
         {
@@ -39,6 +23,31 @@ readonly record struct Response
                 Add(key, value);
             }
         }
+    }
+
+    public void Add<T>(ReadOnlySpan<byte> key, T value)
+        where T : IUtf8SpanFormattable
+    {
+        Buffer.Write(key);
+        Buffer.Write(": "u8);
+
+        var length = 32;
+    Retry:
+        var destination = Buffer.GetSpan(length);
+        if (value.TryFormat(destination, out var written, default, null))
+        {
+            Buffer.Advance(written);
+            Buffer.Write("\n"u8);
+            return;
+        }
+
+        length *= 2;
+        goto Retry;
+    }
+
+    public void Add(ReadOnlySpan<byte> key, U8String value)
+    {
+        Add(key, value.AsSpan());
     }
 
     public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)

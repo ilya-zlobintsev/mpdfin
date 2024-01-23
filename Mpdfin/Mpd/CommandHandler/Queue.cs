@@ -5,7 +5,7 @@ namespace Mpdfin.Mpd;
 partial class CommandHandler
 {
     [Optimize]
-    Response Add(string uri, string? pos)
+    Response Add(U8String uri, U8String? pos)
     {
         if (uri.Length == 0)
         {
@@ -14,22 +14,22 @@ partial class CommandHandler
         }
         else
         {
-            AddId(Guid.Parse(uri), pos);
+            AddId(uri.ParseGuid(), pos);
         }
 
         return new();
     }
 
-    Response AddId(Guid uri, string? pos)
+    Response AddId(Guid uri, U8String? pos)
     {
         int? parsedPos = null;
-        if (pos is not null)
+        if (pos is U8String value)
         {
-            parsedPos = pos[0] switch
+            parsedPos = value[0] switch
             {
-                '+' => Player.CurrentPos + int.Parse(pos.AsSpan(1)),
-                '-' => Player.CurrentPos - int.Parse(pos.AsSpan(1)),
-                _ => int.Parse(pos),
+                (byte)'+' => Player.CurrentPos + int.Parse(value[1..]),
+                (byte)'-' => Player.CurrentPos - int.Parse(value[1..]),
+                _ => int.Parse(value),
             };
         }
 
@@ -39,7 +39,7 @@ partial class CommandHandler
         {
             var url = Db.Client.GetAudioStreamUri(song.Id);
             var queueId = Player.Add(song.Id, parsedPos);
-            return new("Id"u8, queueId.ToString());
+            return new Response().Append("Id"u8, queueId);
         }
         else
         {
@@ -47,9 +47,9 @@ partial class CommandHandler
         }
     }
 
-    Response Delete(string input)
+    Response Delete(U8String input)
     {
-        if (int.TryParse(input, out int pos))
+        if (int.TryParse(input, out var pos))
         {
             Player.DeletePos(pos);
         }
@@ -92,10 +92,10 @@ partial class CommandHandler
         return new();
     }
 
-    Response Shuffle(string? range)
+    Response Shuffle(U8String? range)
     {
-        var queueSlice = range != null
-            ? Request.ParseRange(range)
+        var queueSlice = range.HasValue
+            ? Request.ParseRange(range.Value)
             : new(0, Player.Queue.Count - 1);
 
         Player.ShuffleQueue(queueSlice);

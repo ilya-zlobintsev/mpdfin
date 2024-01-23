@@ -5,11 +5,11 @@ namespace Mpdfin.Mpd;
 partial class CommandHandler
 {
     [Optimize]
-    static Response TagTypes() => Constants
-        .TagNames
+    static Response TagTypes() => U8Enum
+        .GetNames<Tag>()
         .Aggregate(new Response(), (response, tag) =>
         {
-            response.Add("tagtype"u8, tag);
+            response.Append("tagtype"u8, tag);
             return response;
         });
 }

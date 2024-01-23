@@ -17,7 +17,7 @@ partial class CommandHandler
 
         foreach (var value in values)
         {
-            response.Add(keyBytes, value);
+            response.Append(keyBytes, value);
         }
 
         return response;
@@ -27,25 +27,25 @@ partial class CommandHandler
     Response Find(List<Filter> filters)
     {
         return Db
-            .GetMatchingItems([..filters])
+            .GetMatchingItems(filters)
             .Aggregate(new Response(), (response, item) => response.Extend(item.GetResponse()));
     }
 
     [Optimize]
-    Response LsInfo(string? uri)
+    Response LsInfo(U8String uri)
     {
-        var parts = uri?.Split("/", StringSplitOptions.RemoveEmptyEntries) ?? [];
+        var parts = uri.Split('/', U8SplitOptions.RemoveEmpty);
 
         var rootNode = Db.FilesystemRoot;
-        StringBuilder pathBuilder = new();
+        var pathBuilder = new InterpolatedU8StringHandler();
         foreach (var part in parts)
         {
             rootNode = rootNode.Navigate(part);
-            pathBuilder.Append(part);
+            pathBuilder.AppendFormatted(part);
             if (rootNode is null)
                 return new();
         }
-        var path = pathBuilder.ToString();
+        var path = pathBuilder.Written;
 
         Log.Debug($"Navigated to node with {rootNode.Children.Count} items");
 
@@ -57,17 +57,16 @@ partial class CommandHandler
                 var item = Db.Items.Find(item => item.Id == node.ItemId)!;
                 response.Extend(item.GetResponse());
             }
-            else if (node.Name is not null)
+            else if (node.Name is U8String nameValue)
             {
-                var value = !string.IsNullOrEmpty(path)
-                    ? $"{path}/{node.Name}"
-                    : node.Name;
-                response.Add("directory"u8, value);
+                var value = !path.IsEmpty ? u8($"{path}/{nameValue}") : nameValue;
+                response.Append("directory"u8, value);
             }
         }
 
         Log.Debug($"Navigated to {rootNode.Name}");
 
+        pathBuilder.Dispose();
         return response;
     }
 
@@ -92,6 +91,6 @@ partial class CommandHandler
             }
         });
 
-        return new("updating_db"u8, UpdateJobId.ToString());
+        return new Response().Append("updating_db"u8, UpdateJobId);
     }
 }

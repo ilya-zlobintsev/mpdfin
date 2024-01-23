@@ -6,22 +6,22 @@ namespace Mpdfin.DB;
 
 public record Node
 {
-    public string? Name { get; }
+    public U8String? Name { get; }
     public Guid? ItemId { get; }
     public List<Node> Children { get; private set; }
 
-    public Node(string name)
+    public Node(U8String name)
     {
         Name = Sanitize(name);
         Children = [];
     }
 
-    public Node(BaseItemDto item) : this(item.Name)
+    public Node(BaseItemDto item) : this(u8(item.Name))
     {
         ItemId = item.Id;
     }
 
-    public Node(string name, List<Node> children) : this(children)
+    public Node(U8String name, List<Node> children) : this(children)
     {
         Name = Sanitize(name);
     }
@@ -31,7 +31,7 @@ public record Node
         Children = children;
     }
 
-    public Node? Navigate(string name)
+    public Node? Navigate(U8String name)
     {
         return Children.Find(child => child.Name == name);
     }
@@ -66,8 +66,5 @@ public record Node
         return new(rootNodes);
     }
 
-    static string Sanitize(string value)
-    {
-        return value.Replace('/', '+');
-    }
+    static U8String Sanitize(U8String value) => value.Replace('/', '+');
 }

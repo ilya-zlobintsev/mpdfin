@@ -1,9 +1,11 @@
 using System.Buffers;
+using System.Globalization;
 using System.Text;
+using U8.Abstractions;
 
 namespace Mpdfin.Mpd;
 
-readonly record struct Response
+readonly record struct Response : IU8Formattable
 {
     public ArrayBufferWriter<byte> Buffer { get; } = new();
 
@@ -11,21 +13,23 @@ readonly record struct Response
 
     public Response(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
-        Add(key, value);
+        Append(key, value);
     }
 
-    public void Add(ReadOnlySpan<byte> key, ICollection<U8String>? values)
+    public Response Append(ReadOnlySpan<byte> key, ICollection<U8String>? values)
     {
         if (values is not null)
         {
             foreach (var value in values)
             {
-                Add(key, value);
+                Append(key, value);
             }
         }
+
+        return this;
     }
 
-    public void Add<T>(ReadOnlySpan<byte> key, T value)
+    public Response Append<T>(ReadOnlySpan<byte> key, T value)
         where T : IUtf8SpanFormattable
     {
         Buffer.Write(key);
@@ -34,31 +38,32 @@ readonly record struct Response
         var length = 32;
     Retry:
         var destination = Buffer.GetSpan(length);
-        if (value.TryFormat(destination, out var written, default, null))
+        if (value.TryFormat(destination, out var written, default, CultureInfo.InvariantCulture))
         {
             Buffer.Advance(written);
             Buffer.Write("\n"u8);
-            return;
+            return this;
         }
 
         length *= 2;
         goto Retry;
     }
 
-    public void Add(ReadOnlySpan<byte> key, U8String value)
+    public Response Append(ReadOnlySpan<byte> key, U8String value)
     {
-        Add(key, value.AsSpan());
+        return Append(key, value.AsSpan());
     }
 
-    public void Add(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
+    public Response Append(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Buffer.Write(key);
         Buffer.Write(": "u8);
         Buffer.Write(value);
         Buffer.Write("\n"u8);
+        return this;
     }
 
-    public readonly void AddListOk()
+    public readonly void AppendListOk()
     {
         Buffer.Write("list_OK\n"u8);
     }
@@ -77,5 +82,10 @@ readonly record struct Response
     public override string ToString()
     {
         return Encoding.UTF8.GetString(Buffer.WrittenMemory.Span).Replace("\n", "; ");
+    }
+
+    public U8String ToU8String(ReadOnlySpan<char> _ = default, IFormatProvider? __ = null)
+    {
+        return u8(Buffer.WrittenMemory.Span).Replace("\n"u8, "; "u8);
     }
 }

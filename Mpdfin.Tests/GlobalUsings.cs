@@ -1,2 +1,2 @@
 global using Xunit;
-global using Mpdfin;
+global using static U8.Extensions.Syntax;

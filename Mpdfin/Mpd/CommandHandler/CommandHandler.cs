@@ -71,14 +71,14 @@ partial class CommandHandler
             Command.volume => Volume(int.Parse(request.Args[0])),
             Command.replay_gain_status => ReplayGainStatus(),
             Command.add => Add(request.Args[0], request.Args.ElementAtOrDefault(1)),
-            Command.addid => AddId(Guid.Parse(request.Args[0]), request.Args.ElementAtOrDefault(1)),
+            Command.addid => AddId(request.Args[0].ParseGuid(), request.Args.ElementAtOrDefault(1)),
             Command.delete => Delete(request.Args[0]),
             Command.deleteid => DeleteId(int.Parse(request.Args[0])),
             Command.clear => Clear(),
             Command.playlistinfo => PlaylistInfo(),
             Command.plchanges => PlChanges(long.Parse(request.Args[0])),
             Command.tagtypes => TagTypes(),
-            Command.list => List(Enum.Parse<Tag>(request.Args[0], true)),
+            Command.list => List(U8Enum.Parse<Tag>(request.Args[0], true)),
             Command.lsinfo => LsInfo(request.Args.FirstOrDefault()),
             Command.find => Find(Filter.ParseFilters(request.Args)),
             Command.outputs => Outputs(),
@@ -128,7 +128,7 @@ partial class CommandHandler
 
             if (printOk)
             {
-                totalResponse.AddListOk();
+                totalResponse.AppendListOk();
             }
         }
 

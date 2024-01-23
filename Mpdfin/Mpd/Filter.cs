@@ -6,11 +6,11 @@ readonly record struct Filter(Tag Tag, U8String? Value)
 {
     public static List<Filter> ParseFilters(List<U8String> args)
     {
-        List<Filter> filters = [];
+        var filters = new List<Filter>(args.Count / 2);
 
         for (int i = 0; i + 1 < args.Count; i += 2)
         {
-            var tag = Enum.Parse<Tag>(args[i], true);
+            var tag = U8Enum.Parse<Tag>(args[i], true);
             var value = args[i + 1];
             filters.Add(new Filter(tag, value));
         }

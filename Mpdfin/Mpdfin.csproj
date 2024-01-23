@@ -21,6 +21,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <!-- <NoWarn>IL2026</NoWarn> -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);U8.Generated</InterceptorsPreviewNamespaces>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,10 +37,15 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="U8String" Version="0.11.0-alpha" />
+    <!-- <PackageReference Include="U8String" Version="0.11.0-alpha" />
     <PackageReference Include="U8String.Tools" Version="0.11.0-alpha">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    </PackageReference> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\U8String\Sources\U8String\U8String.csproj" />
+    <ProjectReference Include="..\..\U8String\Sources\U8String.Tools\U8String.Tools.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

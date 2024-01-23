@@ -1,4 +1,4 @@
-using System.Text;
+using U8.Abstractions;
 
 namespace Mpdfin.Mpd;
 
@@ -48,108 +48,92 @@ public enum Command
     command_list_end,
 }
 
-public readonly record struct Request
+public readonly record struct Request : IU8Formattable
 {
     public readonly Command Command;
     public readonly List<U8String> Args;
 
-    static Command ParseCommand(ReadOnlySpan<byte> rawCommand)
+    static Command ParseCommand(U8String rawCommand)
     {
         return !int.TryParse(rawCommand, out int _)
-            && Enum.TryParse(rawCommand, false, out Command command)
+            && U8Enum.TryParse(rawCommand, out Command command)
                 ? command : throw new Exception($"unknown command {rawCommand}");
     }
 
     public Request(U8String raw)
     {
-        var i = raw.IndexOf(' ');
-        i = i >= 0 ? i : raw.Length;
+        (var commandValue, raw) = raw.SplitFirst(' ');
 
-        Command = ParseCommand(raw.AsSpan(0, i));
+        Command = ParseCommand(commandValue);
 
         Args = [];
-        StringBuilder currentArgBuilder = new(raw.Length - i);
 
-        for (; i < raw.Length; i++)
+        var argBuilder = new InterpolatedU8StringHandler();
+        var runes = raw.Runes.GetEnumerator();
+
+        while (runes.MoveNext())
         {
-            var c = raw[i];
-            switch (c)
+            var c = runes.Current;
+            switch (c.Value)
             {
-                case (byte)'"':
-                    if (currentArgBuilder.Length > 0)
-                    {
-                        throw new Exception($"Unexpected data before quote: {currentArgBuilder}");
-                    }
+                case '"':
+                    if (argBuilder.BytesWritten is 0)
+                        throw new($"Unexpected data before quote: {u8(ref argBuilder)}");
 
                     var exitLoop = false;
-                    for (i++; i < raw.Length && !exitLoop; i++)
+                    while (runes.MoveNext() && !exitLoop)
                     {
-                        var innerC = raw[i];
-
-                        switch (innerC)
+                        var innerC = runes.Current;
+                        switch (innerC.Value)
                         {
-                            case (byte)'"':
-                                var arg = currentArgBuilder.ToString();
-                                Args.Add(arg);
-                                currentArgBuilder.Clear();
+                            case '"':
+                                Args.Add(u8(ref argBuilder));
                                 exitLoop = true;
                                 break;
-                            case (byte)'\\':
-                                i++;
+                            case '\\':
+                                if (!runes.MoveNext()) throw new("No character after escape symbol");
 
-                                if (i < raw.Length)
-                                {
-                                    var escapedChar = raw[i];
-                                    currentArgBuilder.Append(escapedChar);
-                                }
-                                else
-                                {
-                                    throw new Exception("No character after escape symbol");
-                                }
+                                argBuilder.AppendFormatted(runes.Current);
                                 break;
                             default:
-                                currentArgBuilder.Append(innerC);
+                                argBuilder.AppendFormatted(innerC);
                                 break;
                         }
                     }
                     break;
-                case (byte)' ':
-                    if (currentArgBuilder.Length > 0)
+                case ' ':
+                    if (argBuilder.BytesWritten > 0)
                     {
-                        var arg = currentArgBuilder.ToString();
-                        Args.Add(arg);
-                        currentArgBuilder.Clear();
+                        Args.Add(u8(ref argBuilder));
                     }
                     break;
-                case (byte)'\\':
-                    i++;
+                case '\\':
+                    if (!runes.MoveNext()) throw new("No character after escape symbol");
 
-                    if (i < raw.Length)
-                    {
-                        var escapedChar = raw[i];
-                        currentArgBuilder.Append(escapedChar);
-                    }
-                    else
-                    {
-                        throw new Exception("No character after escape symbol");
-                    }
+                    argBuilder.AppendFormatted(runes.Current);
                     break;
                 default:
-                    currentArgBuilder.Append(c);
+                    argBuilder.AppendFormatted(c);
                     break;
             }
         }
 
-        if (currentArgBuilder.Length > 0)
+        if (argBuilder.BytesWritten > 0)
         {
-            var arg = currentArgBuilder.ToString();
-            Args.Add(arg);
+            Args.Add(u8(ref argBuilder));
         }
     }
 
     public override string ToString()
     {
         return $"{Command} {string.Join(" ", Args)}";
+    }
+
+    public U8String ToU8String(
+        ReadOnlySpan<char> format = default,
+        IFormatProvider? provider = null)
+    {
+        return u8($"{Command} {U8String.Join(' ', Args)}");
     }
 
     public static Range ParseRange(U8String input)

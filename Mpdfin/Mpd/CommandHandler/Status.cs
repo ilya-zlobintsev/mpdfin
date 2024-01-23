@@ -10,43 +10,43 @@ partial class CommandHandler
     {
         Response response = new();
 
-        response.Add("repeat"u8, "0"u8);
-        response.Add("random"u8, Player.Queue.Random ? "1"u8 : "0"u8);
-        response.Add("single"u8, "0"u8);
-        response.Add("consume"u8, "0"u8);
+        response.Append("repeat"u8, "0"u8);
+        response.Append("random"u8, Player.Queue.Random ? "1"u8 : "0"u8);
+        response.Append("single"u8, "0"u8);
+        response.Append("consume"u8, "0"u8);
 
         if (Player.CurrentPos is not null)
-            response.Add("song"u8, Player.CurrentPos.Value);
+            response.Append("song"u8, Player.CurrentPos.Value);
 
         if (Player.CurrentSong is not null)
-            response.Add("songid"u8, Player.CurrentSong.Id);
+            response.Append("songid"u8, Player.CurrentSong.Id);
 
         var nextSong = Player.NextSong;
         if (nextSong is not null)
         {
-            response.Add("nextsong"u8, Player.NextPos!.Value);
-            response.Add("nextsongid"u8, nextSong.SongId);
+            response.Append("nextsong"u8, Player.NextPos!.Value);
+            response.Append("nextsongid"u8, nextSong.SongId);
         }
 
         if (Player.Elapsed is not null)
         {
-            response.Add("elapsed"u8, Player.Elapsed.Value);
-            response.Add("time"u8, u8($"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}"));
-            response.Add("duration"u8, Player.Duration!.Value);
+            response.Append("elapsed"u8, Player.Elapsed.Value);
+            response.Append("time"u8, u8($"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}"));
+            response.Append("duration"u8, Player.Duration!.Value);
         }
 
-        response.Add("volume"u8, Player.Volume);
-        response.Add("state"u8, Player.PlaybackState switch
+        response.Append("volume"u8, Player.Volume);
+        response.Append("state"u8, Player.PlaybackState switch
         {
             VLCState.Playing => "play"u8,
             VLCState.Paused => "pause"u8,
             _ => "stop"u8,
         });
-        response.Add("playlist"u8, Player.PlaylistVersion);
-        response.Add("playlistlength"u8, Player.Queue.Count);
+        response.Append("playlist"u8, Player.PlaylistVersion);
+        response.Append("playlistlength"u8, Player.Queue.Count);
 
         if (Updating)
-            response.Add("updating_db"u8, UpdateJobId);
+            response.Append("updating_db"u8, UpdateJobId);
 
         return response;
     }
@@ -61,18 +61,18 @@ partial class CommandHandler
     {
         Response response = new();
 
-        response.Add("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count());
-        response.Add("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count());
-        response.Add("songs"u8, Db.Items.Count);
+        response.Append("artists"u8, Db.GetUniqueTagValues(Tag.Artist).Count());
+        response.Append("albums"u8, Db.GetUniqueTagValues(Tag.Album).Count());
+        response.Append("songs"u8, Db.Items.Count);
 
         return response;
     }
 
     [Optimize]
-    async Task<Response> Idle(ClientStream stream, List<string> args)
+    async Task<Response> Idle(ClientStream stream, List<U8String> args)
     {
         var subsystems = args.Count > 0
-            ? args.Select(arg => Enum.Parse<Subsystem>(arg, true)).ToArray()
+            ? args.Select(arg => U8Enum.Parse<Subsystem>(arg, true)).ToArray()
             : null;
 
         using CancellationTokenSource source = new();
@@ -91,7 +91,7 @@ partial class CommandHandler
 
                 foreach (var subsystem in notificationTask.Result)
                 {
-                    response.Add("changed"u8, u8(Enum.GetName(subsystem)!));
+                    response.Append("changed"u8, subsystem.ToU8String());
                 }
 
                 return response;

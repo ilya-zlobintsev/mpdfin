@@ -1,7 +1,7 @@
+using System.Buffers.Text;
 using DistIL.Attributes;
 using Jellyfin.Sdk;
 using Mpdfin.DB;
-using System.Text;
 
 namespace Mpdfin.Mpd;
 
@@ -26,8 +26,8 @@ static class Extensions
         var song = db.GetItem(item.SongId) ?? throw new Exception("ID not found in database");
         var response = song.GetResponse();
 
-        response.Add("Pos"u8, item.Position.ToString());
-        response.Add("Id"u8, item.Id.ToString());
+        response.Append("Pos"u8, item.Position);
+        response.Append("Id"u8, item.Id);
 
         return response;
     }
@@ -44,22 +44,22 @@ static class Extensions
 
     public static Response GetResponse(this BaseItemDto item)
     {
-        Response response = new();
+        var response = new Response();
+        var tags = U8Enum.GetNames<Tag>().Zip(U8Enum.GetValues<Tag>());
 
-        response.Add("file"u8, item.Id.ToString());
+        response.Append("file"u8, item.Id);
 
-        foreach (var (key, tag) in Constants.TagNames.Zip(Constants.TagValues))
+        foreach (var (key, tag) in tags)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
             var value = item.GetTagValue(tag);
-            response.Add(keyBytes, value);
+            response.Append(key, value);
         }
 
         var duration = item.GetDuration();
         if (duration is not null)
         {
-            response.Add("duration"u8, duration.Value.ToString());
-            response.Add("time"u8, ((int)duration.Value).ToString());
+            response.Append("duration"u8, duration.Value);
+            response.Append("time"u8, (int)duration.Value);
         }
 
         return response;
@@ -76,21 +76,23 @@ static class Extensions
     }
 
     [Optimize]
-    public static IOrderedEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
+    public static IOrderedEnumerable<U8String> GetUniqueTagValues(this Database db, Tag tag)
     {
         return db.Items.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
     }
 
     [Optimize]
-    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, U8String value)
     {
-        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? []).Any(itemValue => itemValue == value)).OrderItems();
+        return db.Items
+            .Where(item => item.GetTagValue(tag)?.Contains(value) ?? false)
+            .OrderItems();
     }
 
     [Optimize]
-    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, List<Filter> filters)
     {
-        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderItems();
+        return db.Items.Where(item => filters.All(item.MatchesFilter)).OrderItems();
     }
 
     [Optimize]
@@ -103,5 +105,11 @@ static class Extensions
             item.IndexNumber,
             item.PremiereDate,
             item.Name));
+    }
+
+    public static Guid ParseGuid(this U8String value)
+    {
+        return Utf8Parser.TryParse(value, out Guid id, out _)
+            ? id : throw new FormatException("Invalid Guid");
     }
 }

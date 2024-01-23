@@ -9,15 +9,14 @@ partial class CommandHandler
     [Optimize]
     Response List(Tag tag)
     {
+        var key = tag.ToU8String();
         var values = Db.GetUniqueTagValues(tag);
-        var key = Enum.GetName(tag)!;
-        var keyBytes = Encoding.UTF8.GetBytes(key);
 
         Response response = new();
 
         foreach (var value in values)
         {
-            response.Append(keyBytes, value);
+            response.Append(key, value);
         }
 
         return response;
@@ -34,7 +33,7 @@ partial class CommandHandler
     [Optimize]
     Response LsInfo(U8String uri)
     {
-        var parts = uri.Split('/', U8SplitOptions.RemoveEmpty);
+        var parts = uri.Split((byte)'/', U8SplitOptions.RemoveEmpty);
 
         var rootNode = Db.FilesystemRoot;
         var pathBuilder = new InterpolatedU8StringHandler();

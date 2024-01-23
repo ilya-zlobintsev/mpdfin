@@ -6,8 +6,8 @@ namespace Mpdfin.DB;
 
 public record Node
 {
-    public U8String? Name { get; }
-    public Guid? ItemId { get; }
+    public U8String Name { get; }
+    public Guid ItemId { get; }
     public List<Node> Children { get; private set; }
 
     public Node(U8String name)

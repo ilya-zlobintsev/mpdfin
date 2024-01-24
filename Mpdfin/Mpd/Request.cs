@@ -77,7 +77,7 @@ public readonly record struct Request : IU8Formattable
             switch (c.Value)
             {
                 case '"':
-                    if (argBuilder.BytesWritten is 0)
+                    if (argBuilder.BytesWritten > 0)
                         throw new($"Unexpected data before quote: {u8(ref argBuilder)}");
 
                     var exitLoop = false;

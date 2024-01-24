@@ -5,7 +5,7 @@ namespace Mpdfin.Mpd;
 partial class CommandHandler
 {
     [Optimize]
-    Response Add(U8String uri, U8String? pos)
+    Response Add(U8String uri, U8String pos)
     {
         if (uri.Length == 0)
         {
@@ -21,16 +21,16 @@ partial class CommandHandler
     }
 
     [Optimize]
-    Response AddId(Guid uri, U8String? pos)
+    Response AddId(Guid uri, U8String pos)
     {
         int? parsedPos = null;
-        if (pos is U8String value)
+        if (pos.Length > 0)
         {
-            parsedPos = value[0] switch
+            parsedPos = pos[0] switch
             {
-                (byte)'+' => Player.CurrentPos + int.Parse(value[1..]),
-                (byte)'-' => Player.CurrentPos - int.Parse(value[1..]),
-                _ => int.Parse(value),
+                (byte)'+' => Player.CurrentPos + int.Parse(pos[1..]),
+                (byte)'-' => Player.CurrentPos - int.Parse(pos[1..]),
+                _ => int.Parse(pos),
             };
         }
 

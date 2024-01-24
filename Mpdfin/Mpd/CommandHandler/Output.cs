@@ -16,6 +16,6 @@ partial class CommandHandler
             i++;
         }
 
-        return new();
+        return response;
     }
 }

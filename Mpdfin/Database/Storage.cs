@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Jellyfin.Sdk;
@@ -8,19 +8,19 @@ namespace Mpdfin.DB;
 
 public class DatabaseStorage
 {
-    public List<BaseItemDto> Items { get; set; }
+    public FrozenDictionary<Guid, BaseItemDto> Items { get; set; }
     public AuthenticationResult AuthenticationResult { get; set; }
 
     public DatabaseStorage(AuthenticationResult auth)
     {
-        Items = [];
+        Items = FrozenDictionary<Guid, BaseItemDto>.Empty;
         AuthenticationResult = auth;
     }
 
     [JsonConstructor]
     public DatabaseStorage(AuthenticationResult authenticationResult, List<BaseItemDto> items)
     {
-        Items = items;
+        Items = items.ToFrozenDictionary(item => item.Id);
         AuthenticationResult = authenticationResult;
     }
 

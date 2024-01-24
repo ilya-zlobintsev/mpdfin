@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using DistIL.Attributes;
 using Jellyfin.Sdk;
 using Serilog;
@@ -12,18 +13,14 @@ public class Database
     public event EventHandler? OnDatabaseUpdated;
     public event EventHandler? OnUpdate;
 
-    public List<BaseItemDto> Items
+    public FrozenDictionary<Guid, BaseItemDto> Items
     {
         get => Storage.Items;
         private set => Storage.Items = value;
     }
     public Node FilesystemRoot;
 
-    [Optimize]
-    public BaseItemDto? GetItem(Guid id)
-    {
-        return Items.Find(item => item.Id == id);
-    }
+    public BaseItemDto? GetItem(Guid id) => Items.GetValueOrDefault(id);
 
     public Database(JellyfinClient client, DatabaseStorage storage)
     {
@@ -55,8 +52,7 @@ public class Database
                 parentId: musicCollection.Id,
                 includeItemTypes: [BaseItemKind.Audio]);
 
-            Items = itemsResponse.Items as List<BaseItemDto>
-                ?? itemsResponse.Items.ToList();
+            Items = itemsResponse.Items.ToFrozenDictionary(item => item.Id);
             FilesystemRoot = Node.BuildTree(this);
 
             Log.Debug($"Loaded {Items.Count} items");

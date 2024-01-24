@@ -1,4 +1,3 @@
-using System.Text;
 using DistIL.Attributes;
 using Serilog;
 
@@ -11,15 +10,9 @@ partial class CommandHandler
     {
         var key = tag.ToU8String();
         var values = Db.GetUniqueTagValues(tag);
+        var response = new Response();
 
-        Response response = new();
-
-        foreach (var value in values)
-        {
-            response.Append(key, value);
-        }
-
-        return response;
+        return values.Aggregate(response, (r, v) => r.Append(key, v));
     }
 
     [Optimize]
@@ -27,7 +20,8 @@ partial class CommandHandler
     {
         return Db
             .GetMatchingItems(filters)
-            .Aggregate(new Response(), (response, item) => response.Extend(item.GetResponse()));
+            .Select(i => i.GetResponse())
+            .Aggregate(new Response(), (r, i) => r.Extend(i));
     }
 
     [Optimize]
@@ -51,10 +45,9 @@ partial class CommandHandler
         Response response = new();
         foreach (var node in rootNode.Children)
         {
-            if (node.ItemId is not null)
+            if (node.ItemId is Guid idValue)
             {
-                var item = Db.Items.Find(item => item.Id == node.ItemId)!;
-                response.Extend(item.GetResponse());
+                response.Extend(Db.Items[idValue].GetResponse());
             }
             else if (node.Name is U8String nameValue)
             {

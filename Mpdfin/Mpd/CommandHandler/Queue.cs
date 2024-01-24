@@ -9,7 +9,7 @@ partial class CommandHandler
     {
         if (uri.Length == 0)
         {
-            var items = Db.Items.OrderItems().Select(song => song.Id).ToArray();
+            var items = Db.Items.Values.OrderItems().Select(song => song.Id).ToArray();
             Player.AddMany(items);
         }
         else
@@ -33,10 +33,9 @@ partial class CommandHandler
             };
         }
 
-        var song = Db.Items.Find(item => item.Id == uri);
-
-        if (song is not null)
+        if (Db.Items.TryGetValue(uri, out var song))
         {
+            // TODO: It seems this should be appended to the response too?
             var url = Db.Client.GetAudioStreamUri(song.Id);
             var queueId = Player.Add(song.Id, parsedPos);
             return new Response().Append("Id"u8, queueId);

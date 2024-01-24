@@ -4,14 +4,12 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
+    [Optimize]
     static Response Commands()
     {
-        var response = new Response();
-        foreach (var name in U8Enum.GetNames<Command>())
-        {
-            response.Append("command"u8, name);
-        }
-        return response;
+        return U8Enum
+            .GetNames<Command>()
+            .Aggregate(new Response(), (r, n) => r.Append("command"u8, n));
     }
 
     static Response Decoders() => new();

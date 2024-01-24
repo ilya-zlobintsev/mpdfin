@@ -8,19 +8,19 @@ namespace Mpdfin.DB;
 
 public class DatabaseStorage
 {
-    public FrozenDictionary<Guid, BaseItemDto> Items { get; set; }
+    public List<BaseItemDto> Items { get; set; }
     public AuthenticationResult AuthenticationResult { get; set; }
 
     public DatabaseStorage(AuthenticationResult auth)
     {
-        Items = FrozenDictionary<Guid, BaseItemDto>.Empty;
+        Items = [];
         AuthenticationResult = auth;
     }
 
     [JsonConstructor]
     public DatabaseStorage(AuthenticationResult authenticationResult, List<BaseItemDto> items)
     {
-        Items = items.ToFrozenDictionary(item => item.Id);
+        Items = items;
         AuthenticationResult = authenticationResult;
     }
 

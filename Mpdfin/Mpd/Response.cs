@@ -11,6 +11,8 @@ readonly record struct Response : IU8Formattable
 
     public ReadOnlyMemory<byte> Contents => Buffer.WrittenMemory;
 
+    public Response() { }
+
     public Response(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Append(key, value);

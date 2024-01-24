@@ -47,7 +47,7 @@ partial class CommandHandler
         {
             if (node.ItemId is Guid idValue)
             {
-                response.Extend(Db.Items[idValue].GetResponse());
+                response.Extend(Db.Items.First(i => i.Id == idValue).GetResponse());
             }
             else if (node.Name is U8String nameValue)
             {

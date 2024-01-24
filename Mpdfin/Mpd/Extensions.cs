@@ -78,13 +78,13 @@ static class Extensions
     [Optimize]
     public static IOrderedEnumerable<U8String> GetUniqueTagValues(this Database db, Tag tag)
     {
-        return db.Items.Values.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
+        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
     }
 
     [Optimize]
     public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, U8String value)
     {
-        return db.Items.Values
+        return db.Items
             .Where(item => item.GetTagValue(tag)?.Contains(value) ?? false)
             .OrderItems();
     }
@@ -92,7 +92,7 @@ static class Extensions
     [Optimize]
     public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, List<Filter> filters)
     {
-        return db.Items.Values.Where(item => filters.All(item.MatchesFilter)).OrderItems();
+        return db.Items.Where(item => filters.All(item.MatchesFilter)).OrderItems();
     }
 
     [Optimize]

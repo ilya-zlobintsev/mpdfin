@@ -54,7 +54,7 @@ class ClientStream : IAsyncDisposable
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")
     {
-        return Write(u8($"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}\n"));
+        return Write(u8($"ACK [{(int)error}@{commandListNum}] {{{currentCommand.AsSpan()}}} {messageText.AsSpan()}\n"));
     }
 
     public async ValueTask DisposeAsync()

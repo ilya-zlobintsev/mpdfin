@@ -19,7 +19,7 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>true</PublishTrimmed>
-    <!-- <NoWarn>IL2026</NoWarn> -->
+    <NoWarn>SYSLIB1034</NoWarn>
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);U8.Generated</InterceptorsPreviewNamespaces>
   </PropertyGroup>

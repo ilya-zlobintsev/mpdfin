@@ -75,7 +75,6 @@ class ClientStream : IAsyncDisposable
                 line = u8(await Reader.ReadLineAsync(ct) ?? "");
             }
 
-            // TODO: This doesn't (and didn't) handle empty lines assuming they're EOF
             if (line.IsEmpty)
             {
                 Log.Debug("Got EOF, closing client stream");

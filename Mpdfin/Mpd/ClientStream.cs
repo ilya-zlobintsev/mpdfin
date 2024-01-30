@@ -1,8 +1,8 @@
 using System.Buffers;
 using System.Net.Sockets;
-using System.Text;
 using Serilog;
 using Serilog.Events;
+using U8.IO;
 
 namespace Mpdfin.Mpd;
 
@@ -13,7 +13,7 @@ class ClientStream : IAsyncDisposable
 
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
-    readonly StreamReader Reader;
+    readonly U8Reader<U8StreamSource> Reader;
     readonly SemaphoreSlim Lock;
     public bool EndOfStream { get; private set; }
 
@@ -22,7 +22,7 @@ class ClientStream : IAsyncDisposable
         Log.Debug($"Opening new connection from {client.Client.RemoteEndPoint}");
         TcpClient = client;
         Stream = client.GetStream();
-        Reader = new(Stream, Encoding.UTF8);
+        Reader = new(new(Stream));
         Lock = new(1, 1);
     }
 
@@ -72,7 +72,7 @@ class ClientStream : IAsyncDisposable
             var line = U8String.Empty;
             using (await Lock.LockAsync())
             {
-                line = u8(await Reader.ReadLineAsync(ct) ?? "");
+                line = await Reader.ReadLineAsync(ct) ?? U8String.Empty;
             }
 
             if (line.IsEmpty)

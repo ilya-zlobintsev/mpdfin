@@ -37,8 +37,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="U8String" Version="0.11.5-alpha" />
-    <PackageReference Include="U8String.Tools" Version="0.11.5-alpha">
+    <PackageReference Include="U8String" Version="0.11.10-alpha" />
+    <PackageReference Include="U8String.Tools" Version="0.11.10-alpha">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

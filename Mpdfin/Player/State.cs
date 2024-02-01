@@ -1,26 +1,19 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using LibVLCSharp.Shared;
 using Serilog;
 
 namespace Mpdfin.Player;
 
-[JsonSourceGenerationOptions(IncludeFields = true)]
-[JsonSerializable(typeof(PlayerState))]
-internal partial class PlayerStateContext : JsonSerializerContext
-{
-}
-
 public class PlayerState
 {
-    public int Volume;
-    public int? CurrentPos;
-    public int PlaylistVersion;
-    public VLCState PlaybackState;
-    public List<QueueItem> QueueItems = new();
-    public bool Random;
-    public int NextSongId;
-    public double? Elapsed;
+    public int Volume { get; set; }
+    public int? CurrentPos { get; set; }
+    public int PlaylistVersion { get; set; }
+    public VLCState PlaybackState { get; init; }
+    public required IReadOnlyList<QueueItem> QueueItems { get; init; }
+    public bool Random { get; init; }
+    public int NextSongId { get; init; }
+    public double? Elapsed { get; init; }
 
     public static PlayerState? Load()
     {
@@ -28,8 +21,9 @@ public class PlayerState
 
         try
         {
-            var contents = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize(contents, PlayerStateContext.Default.PlayerState) ?? new PlayerState();
+            using var file = File.OpenRead(filePath);
+            return JsonSerializer.Deserialize(file, SerializerContext.Default.PlayerState)
+                ?? new PlayerState { QueueItems = [] };
         }
         catch (Exception ex)
         {
@@ -44,8 +38,8 @@ public class PlayerState
         Directory.CreateDirectory(DataDir());
 
         var filePath = FilePath();
-        var contents = JsonSerializer.Serialize(this, PlayerStateContext.Default.PlayerState);
-        await File.WriteAllTextAsync(filePath, contents);
+        using var file = File.OpenWrite(filePath);
+        await JsonSerializer.SerializeAsync(file, this, SerializerContext.Default.PlayerState);
         Log.Debug("Saved state");
     }
 

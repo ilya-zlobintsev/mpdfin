@@ -2,15 +2,15 @@ using Jellyfin.Sdk;
 
 namespace Mpdfin.Mpd;
 
-readonly record struct Filter(Tag Tag, string? Value)
+readonly record struct Filter(Tag Tag, U8String? Value)
 {
-    public static List<Filter> ParseFilters(List<string> args)
+    public static List<Filter> ParseFilters(List<U8String> args)
     {
-        List<Filter> filters = new();
+        var filters = new List<Filter>(args.Count / 2);
 
         for (int i = 0; i + 1 < args.Count; i += 2)
         {
-            var tag = Enum.Parse<Tag>(args[i], true);
+            var tag = U8Enum.Parse<Tag>(args[i], true);
             var value = args[i + 1];
             filters.Add(new Filter(tag, value));
         }
@@ -25,8 +25,8 @@ static class FilterExtensions
     {
         var tagValues = item.GetTagValue(filter.Tag);
 
-        return tagValues is null
-            ? string.IsNullOrEmpty(filter.Value)
-            : tagValues.Contains(filter.Value);
+        return tagValues != null
+            ? tagValues.Contains(filter.Value!.Value)
+            : filter.Value is null or [];
     }
 }

@@ -11,7 +11,6 @@ public class JellyfinClient
     public readonly UserDto CurrentUser;
     readonly SdkClientSettings Settings;
 
-
     public JellyfinClient(string serverUrl, AuthenticationResult authenticationResult)
     {
         HttpClient httpClient = new();
@@ -50,7 +49,6 @@ public class JellyfinClient
         settings.InitializeClientSettings("Mpdfin", "0.1.0", Environment.MachineName, "1");
         return settings;
     }
-
 
     public Uri GetAudioStreamUri(Guid itemId)
     {

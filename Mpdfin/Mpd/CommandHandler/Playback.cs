@@ -1,13 +1,14 @@
+using System.Globalization;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Play(string? posArg)
+    Response Play(U8String? posArg)
     {
-        if (posArg is not null)
+        if (posArg.HasValue)
         {
-            var pos = int.Parse(posArg);
-
+            var pos = int.Parse(posArg.Value, CultureInfo.InvariantCulture);
             if (pos >= Player.Queue.Count)
                 throw new FileNotFoundException("Invalid song index");
 
@@ -27,12 +28,12 @@ partial class CommandHandler
         return new();
     }
 
-    Response Pause(string? state)
+    Response Pause(U8String? state)
     {
         bool? value = state switch
         {
-            "0" => false,
-            "1" => true,
+            [(byte)'0'] => false,
+            [(byte)'1'] => true,
             _ => null,
         };
         Player.SetPause(value);
@@ -45,7 +46,7 @@ partial class CommandHandler
         return new();
     }
 
-    Response GetVol() => new("volume"u8, Player.Volume.ToString());
+    Response GetVol() => new Response().Append("volume"u8, Player.Volume);
 
     Response SetVol(int vol)
     {
@@ -95,6 +96,6 @@ partial class CommandHandler
 
     static Response ReplayGainStatus()
     {
-        return new("replay_gain_mode"u8, "off");
+        return new("replay_gain_mode"u8, "off"u8);
     }
 }

@@ -1,16 +1,15 @@
+using DistIL.Attributes;
+
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    static Response TagTypes()
-    {
-        Response response = new();
-
-        foreach (var tag in Enum.GetValues<Tag>())
+    [Optimize]
+    static Response TagTypes() => U8Enum
+        .GetNames<Tag>()
+        .Aggregate(new Response(), (response, tag) =>
         {
-            response.Add("tagtype"u8, tag.ToString());
-        }
-
-        return response;
-    }
+            response.Append("tagtype"u8, tag);
+            return response;
+        });
 }

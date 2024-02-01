@@ -1,27 +1,27 @@
+using DistIL.Attributes;
 using Jellyfin.Sdk;
 using Mpdfin.Mpd;
-using Serilog;
 
 namespace Mpdfin.DB;
 
-public record class Node
+public record Node
 {
-    public string? Name { get; }
+    public U8String? Name { get; }
     public Guid? ItemId { get; }
     public List<Node> Children { get; private set; }
 
-    public Node(string name)
+    public Node(U8String name)
     {
         Name = Sanitize(name);
-        Children = new();
+        Children = [];
     }
 
-    public Node(BaseItemDto item) : this(item.Name)
+    public Node(BaseItemDto item) : this(u8(item.Name))
     {
         ItemId = item.Id;
     }
 
-    public Node(string name, List<Node> children) : this(children)
+    public Node(U8String name, List<Node> children) : this(children)
     {
         Name = Sanitize(name);
     }
@@ -31,21 +31,15 @@ public record class Node
         Children = children;
     }
 
-    public Node? Navigate(string name)
+    public Node? Navigate(U8String name)
     {
-        foreach (var child in Children)
-        {
-            if (child.Name == name)
-            {
-                return child;
-            }
-        }
-        return null;
+        return Children.Find(child => child.Name == name);
     }
 
+    [Optimize]
     public static Node BuildTree(Database db)
     {
-        List<Node> rootNodes = new();
+        List<Node> rootNodes = [];
 
         foreach (var artist in db.GetUniqueTagValues(Tag.Artist))
         {
@@ -53,20 +47,18 @@ public record class Node
                 .SelectMany(item => item.GetTagValue(Tag.Album) ?? [])
                 .Distinct();
 
-            List<Node> albumNodes = new();
-            foreach (var album in albums)
-            {
-                Filter[] albumFilters = [new Filter(Tag.Artist, artist), new Filter(Tag.Album, album)];
-                var songs = db.GetMatchingItems(albumFilters);
-
-                List<Node> songNodes = new();
-                foreach (var song in songs)
+            var albumNodes = albums
+                .Select(album =>
                 {
-                    songNodes.Add(new(song));
-                }
+                    var songs = db.GetMatchingItems(
+                    [
+                        new(Tag.Artist, artist),
+                        new(Tag.Album, album)
+                    ]);
 
-                albumNodes.Add(new(album, songNodes));
-            }
+                    return new Node(album, songs.Select(song => new Node(song)).ToList());
+                })
+                .ToList();
 
             rootNodes.Add(new(artist, albumNodes));
         }
@@ -74,8 +66,5 @@ public record class Node
         return new(rootNodes);
     }
 
-    static string Sanitize(string value)
-    {
-        return value.Replace('/', '+');
-    }
+    static U8String Sanitize(U8String value) => value.Replace('/', '+');
 }

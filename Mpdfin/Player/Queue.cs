@@ -1,51 +1,56 @@
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+
 using Serilog;
 
 namespace Mpdfin.Player;
 
 public class Queue
 {
+    private List<QueueItem> _items;
 
-    public List<QueueItem> Items { get; private set; }
+    public IReadOnlyList<QueueItem> Items => _items;
 
     public bool Random { get; private set; }
 
-    public int Count => Items.Count;
+    public int Count => _items.Count;
 
     public int NextItemId { get; private set; }
 
-    public Queue() => Items = [];
+    public Queue() => _items = [];
 
     public Queue(List<QueueItem> items, int nextSongId, bool random)
     {
-        Items = items;
+        _items = items;
         NextItemId = nextSongId;
         Random = random;
     }
 
     public void SetRandom(bool value)
     {
-
         if (Random == value)
             return;
 
         if (value)
-            Items = [.. Items.OrderBy(_ => System.Random.Shared.Next())];
+        {
+            _items = [.. _items.OrderBy(_ => System.Random.Shared.Next())];
+        }
         else
         {
-            Items = [.. Items.OrderBy(item => item.Position)];
+            _items = [.. _items.OrderBy(item => item.Position)];
             RecalculatePositions();
         }
 
         Random = value;
     }
 
-    public int Add(Guid songId) => AddWithPosition(Items.Count, songId);
+    public int Add(Guid songId) => AddWithPosition(_items.Count, songId);
 
     public int AddWithPosition(int pos, Guid songId)
     {
         Log.Information($"Adding with pos {pos}");
         var item = new QueueItem { Position = pos, Id = NextItemId, SongId = songId };
-        Items.Insert(pos, item);
+        _items.Insert(pos, item);
         RecalculatePositions();
         NextItemId++;
 
@@ -56,33 +61,36 @@ public class Queue
     {
         Log.Debug($"Adding {songIds.Length} items");
 
-        var pos = startPos ?? Items.Count;
-        foreach (var songId in songIds)
+        var pos = startPos ?? _items.Count;
+        var index = pos;
+
+        var items = songIds.Select(songId => new QueueItem
         {
-            var item = new QueueItem { Position = pos, Id = NextItemId, SongId = songId };
-            Items.Insert(pos, item);
-            NextItemId++;
-            pos++;
-        }
+            Position = pos++,
+            Id = NextItemId++,
+            SongId = songId
+        });
+
+        _items.InsertRange(index, items);
 
         RecalculatePositions();
     }
 
-    public void Clear() => Items.Clear();
+    public void Clear() => _items.Clear();
 
     public void RemoveAt(int pos)
     {
-        Items.RemoveAll(item => item.Position == pos);
+        _items.RemoveAll(item => item.Position == pos);
         RecalculatePositions();
     }
 
     public void RemoveById(int id)
     {
-        Items.RemoveAll(item => item.Id == id);
+        _items.RemoveAll(item => item.Id == id);
         RecalculatePositions();
     }
 
-    public QueueItem? GetById(int id) => Items.FirstOrDefault(item => item.Id == id);
+    public QueueItem? GetById(int id) => _items.Find(item => item.Id == id);
 
     public int? GetPositionById(int id) => GetById(id)?.Position;
 
@@ -92,25 +100,35 @@ public class Queue
         if (index is not null)
         {
             var nextIndex = index + offset;
-            return nextIndex < Count && nextIndex >= 0 ? Items[nextIndex.Value].Position : null;
+            return nextIndex < Count && nextIndex >= 0 ? _items[nextIndex.Value].Position : null;
         }
         else
+        {
             return null;
+        }
     }
 
-    private int? GetIndexByPosition(int pos) => Items.FindIndex(item => item.Position == pos);
+    private int? GetIndexByPosition(int pos) => _items.FindIndex(item => item.Position == pos);
 
     private void RecalculatePositions()
     {
-        for (int i = 0; i < Items.Count; i++)
+        for (int i = 0; i < _items.Count; i++)
         {
-            var item = Items[i];
+            var item = _items[i];
             item.Position = i;
-            Items[i] = item;
+            _items[i] = item;
         }
     }
 
-    public QueueItem? ItemAtPosition(int pos) => Items.FirstOrDefault(item => item.Position == pos);
+    public QueueItem? ItemAtPosition(int pos) => _items.Find(item => item.Position == pos);
 
-    public IEnumerable<QueueItem> AsEnumerable() => Items.OrderBy(item => item.Position);
+    public IOrderedEnumerable<QueueItem> AsEnumerable() => _items.OrderBy(item => item.Position);
+
+    public void Shuffle(Range queueSlice)
+    {
+        var items = CollectionsMarshal.AsSpan(_items)[queueSlice];
+        RandomNumberGenerator.Shuffle(items);
+
+        RecalculatePositions();
+    }
 }

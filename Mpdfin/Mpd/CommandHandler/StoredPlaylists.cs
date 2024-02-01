@@ -3,7 +3,7 @@ namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response ListPlaylists()
+    static Response ListPlaylists()
     {
         return new();
     }

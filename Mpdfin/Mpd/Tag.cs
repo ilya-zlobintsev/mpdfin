@@ -40,17 +40,17 @@ enum Tag
 
 static class TagExtractor
 {
-    public static string[]? GetTagValue(this BaseItemDto item, Tag tag)
+    public static U8String[]? GetTagValue(this BaseItemDto item, Tag tag)
     {
         return tag switch
         {
             Tag.Title => item.Name?.ToSingleItemArray(),
             Tag.Album => item.Album?.ToSingleItemArray(),
-            Tag.Artist => item.Artists?.ToArray(),
+            Tag.Artist => item.Artists?.Select(U8String.Create).ToArray(),
             Tag.AlbumArtist => item.AlbumArtist?.ToSingleItemArray(),
-            Tag.Genre => item.Genres?.ToArray(),
-            Tag.Date => item.PremiereDate?.ToString("yyyy-MM-dd").ToSingleItemArray(),
-            Tag.Track => item.IndexNumber?.ToString().ToSingleItemArray(),
+            Tag.Genre => item.Genres?.Select(U8String.Create).ToArray(),
+            Tag.Date => item.PremiereDate?.ToU8String("yyyy-MM-dd").ToSingleItemArray(),
+            Tag.Track => item.IndexNumber?.ToU8String().ToSingleItemArray(),
             _ => null,
         };
     }

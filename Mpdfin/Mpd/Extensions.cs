@@ -1,7 +1,7 @@
+using System.Buffers.Text;
+using DistIL.Attributes;
 using Jellyfin.Sdk;
-using Mpdfin.Player;
 using Mpdfin.DB;
-using System.Text;
 
 namespace Mpdfin.Mpd;
 
@@ -20,13 +20,14 @@ static class Extensions
         return new AsyncLock { Lock = semaphore };
     }
 
+    [Optimize]
     public static Response GetResponse(this Player.QueueItem item, Database db)
     {
         var song = db.GetItem(item.SongId) ?? throw new Exception("ID not found in database");
         var response = song.GetResponse();
 
-        response.Add("Pos"u8, item.Position.ToString());
-        response.Add("Id"u8, item.Id.ToString());
+        response.Append("Pos"u8, item.Position);
+        response.Append("Id"u8, item.Id);
 
         return response;
     }
@@ -36,58 +37,79 @@ static class Extensions
     /// </summary>
     public static double? GetDuration(this BaseItemDto item)
     {
-        if (item.RunTimeTicks is not null)
-            return (double)item.RunTimeTicks / 10000000;
-        else
-            return null;
+        return item.RunTimeTicks is not null
+            ? (double)item.RunTimeTicks / 10000000
+            : null;
     }
 
     public static Response GetResponse(this BaseItemDto item)
     {
-        Response response = new();
+        var response = new Response();
+        var tags = U8Enum.GetNames<Tag>().Zip(U8Enum.GetValues<Tag>());
 
-        response.Add("file"u8, item.Id.ToString());
+        response.Append("file"u8, item.Id);
 
-        foreach (var tag in Enum.GetValues<Tag>())
+        foreach (var (key, tag) in tags)
         {
-            var key = Enum.GetName(tag)!.ToString();
-            var keyBytes = Encoding.UTF8.GetBytes(key);
             var value = item.GetTagValue(tag);
-            response.Add(keyBytes, value);
+            response.Append(key, value);
         }
 
         var duration = item.GetDuration();
         if (duration is not null)
         {
-            response.Add("duration"u8, duration.Value.ToString());
-            response.Add("time"u8, ((int)duration.Value).ToString());
+            response.Append("duration"u8, duration.Value);
+            response.Append("time"u8, (int)duration.Value);
         }
 
         return response;
     }
 
-    public static string[] ToSingleItemArray(this string value)
+    public static U8String[] ToSingleItemArray(this string value)
     {
-        return new string[1] { value };
+        return [u8(value)];
     }
 
-    public static IEnumerable<string> GetUniqueTagValues(this Database db, Tag tag)
+    public static U8String[] ToSingleItemArray(this U8String value)
     {
-        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? Array.Empty<string>()).Distinct().Order();
+        return [u8(value)];
     }
 
-    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, string? value)
+    [Optimize]
+    public static IOrderedEnumerable<U8String> GetUniqueTagValues(this Database db, Tag tag)
     {
-        return db.Items.FindAll(item => (item.GetTagValue(tag) ?? Array.Empty<string>()).Any(itemValue => itemValue == value)).OrderItems();
+        return db.Items.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
     }
 
-    public static IEnumerable<BaseItemDto> GetMatchingItems(this Database db, Filter[] filters)
+    [Optimize]
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, U8String value)
     {
-        return db.Items.FindAll(item => filters.All(filter => item.MatchesFilter(filter))).OrderItems();
+        return db.Items
+            .Where(item => item.GetTagValue(tag)?.Contains(value) ?? false)
+            .OrderItems();
     }
 
+    [Optimize]
+    public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, List<Filter> filters)
+    {
+        return db.Items.Where(item => filters.All(item.MatchesFilter)).OrderItems();
+    }
+
+    [Optimize]
     public static IOrderedEnumerable<BaseItemDto> OrderItems(this IEnumerable<BaseItemDto> items)
     {
-        return items.OrderBy(item => (item.AlbumArtist, item.Artists.ElementAtOrDefault(0), item.Album, item.IndexNumber, item.PremiereDate, item.Name));
+        return items.OrderBy(item => (
+            item.AlbumArtist,
+            item.Artists is [var first, ..] ? first : null,
+            item.Album,
+            item.IndexNumber,
+            item.PremiereDate,
+            item.Name));
+    }
+
+    public static Guid ParseGuid(this U8String value)
+    {
+        return Utf8Parser.TryParse(value, out Guid id, out _)
+            ? id : throw new FormatException("Invalid Guid");
     }
 }

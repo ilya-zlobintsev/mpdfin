@@ -9,13 +9,13 @@ partial class CommandHandler
         int i = 0;
         foreach (var device in Player.AudioOutputDevices)
         {
-            response.Add("outputid"u8, i.ToString());
-            response.Add("outputname"u8, device.Name);
-            response.Add("outputenabled"u8, "1"u8);
+            response.Append("outputid"u8, i);
+            response.Append("outputname"u8, u8(device.Name));
+            response.Append("outputenabled"u8, "1"u8);
 
             i++;
         }
 
-        return new();
+        return response;
     }
 }

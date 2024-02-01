@@ -1,5 +1,3 @@
-using System.Data.Common;
-using Jellyfin.Sdk;
 using LibVLCSharp.Shared;
 using LibVLCSharp.Shared.Structures;
 using Mpdfin.DB;
@@ -129,9 +127,13 @@ public class Player
 
     public void LoadState(PlayerState state, Database db)
     {
-        if (state.QueueItems is not null)
+        var queueItems = state.QueueItems;
+        if (queueItems != null)
         {
-            Queue = new(state.QueueItems, state.NextSongId, state.Random);
+            Queue = new(
+                queueItems as List<QueueItem> ?? [.. queueItems],
+                state.NextSongId,
+                state.Random);
             Log.Information($"Loaded a queue of {Queue.Count} items from state");
         }
 
@@ -273,9 +275,12 @@ public class Player
         RaiseEvent(Subsystem.playlist);
     }
 
-    public void DeleteRange(int start, int end)
+    public void DeleteRange(Range queueSlice)
     {
-        for (int i = start; i < end; i++)
+        var start = queueSlice.Start.Value;
+        var end = queueSlice.End.Value;
+
+        for (var i = start; i < end; i++)
         {
             Log.Debug($"Deleting item {i}");
             DeletePos(i);
@@ -292,12 +297,9 @@ public class Player
 
     int AddItem(Guid songId, int? pos = null)
     {
-        int itemId;
-        if (pos is not null)
-            itemId = Queue.AddWithPosition(pos.Value, songId);
-        else
-            itemId = Queue.Add(songId);
-
+        int itemId = pos is not null
+            ? Queue.AddWithPosition(pos.Value, songId)
+            : Queue.Add(songId);
         PlaylistVersion++;
         return itemId;
     }
@@ -367,23 +369,14 @@ public class Player
         }
     }
 
-    public void ShuffleQueue(int start, int end)
+    public void ShuffleQueue(Range queueSlice)
     {
-        /*int? currentId = CurrentPos is not null ? Queue[CurrentPos.Value].Id : null;
-
-        var shuffled = Queue.GetRange(start, end - start).OrderBy(_ => System.Random.Shared.Next());
-        for (int i = 0; i < end - start; i++)
-        {
-            var item = shuffled.ElementAt(i);
-            Queue[start + i] = item;
-        }
-
-        if (currentId is not null)
-            CurrentPos = Queue.FindIndex(item => item.Id == currentId);
+        var currentSong = CurrentSong;
+        Queue.Shuffle(queueSlice);
+        CurrentPos = currentSong?.Position;
 
         PlaylistVersion++;
-        RaiseEvent(Subsystem.playlist);*/
-        throw new NotImplementedException();
+        RaiseEvent(Subsystem.playlist);
     }
 
     void PlaybackChanged()

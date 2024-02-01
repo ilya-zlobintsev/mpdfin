@@ -1,11 +1,11 @@
-using System.Collections;
-using Microsoft.Win32;
+using DistIL.Attributes;
 
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    Response Add(string uri, string? pos)
+    [Optimize]
+    Response Add(U8String uri, U8String pos)
     {
         if (uri.Length == 0)
         {
@@ -14,32 +14,31 @@ partial class CommandHandler
         }
         else
         {
-            AddId(Guid.Parse(uri), pos);
+            AddId(uri.ParseGuid(), pos);
         }
 
         return new();
     }
 
-    Response AddId(Guid uri, string? pos)
+    [Optimize]
+    Response AddId(Guid uri, U8String pos)
     {
         int? parsedPos = null;
-        if (pos is not null)
+        if (pos.Length > 0)
         {
             parsedPos = pos[0] switch
             {
-                '+' => Player.CurrentPos + int.Parse(pos[1..]),
-                '-' => Player.CurrentPos - int.Parse(pos[1..]),
+                (byte)'+' => Player.CurrentPos + int.Parse(pos[1..]),
+                (byte)'-' => Player.CurrentPos - int.Parse(pos[1..]),
                 _ => int.Parse(pos),
             };
         }
 
-        var song = Db.Items.Find(item => item.Id == uri);
-
+        var song = Db.Items.FirstOrDefault(item => item.Id == uri);
         if (song is not null)
         {
-            var url = Db.Client.GetAudioStreamUri(song.Id);
             var queueId = Player.Add(song.Id, parsedPos);
-            return new("Id"u8, queueId.ToString());
+            return new Response().Append("Id"u8, queueId);
         }
         else
         {
@@ -47,16 +46,16 @@ partial class CommandHandler
         }
     }
 
-    Response Delete(string input)
+    Response Delete(U8String input)
     {
-        if (int.TryParse(input, out int pos))
+        if (int.TryParse(input, out var pos))
         {
             Player.DeletePos(pos);
         }
         else
         {
-            var (start, end) = Request.ParseRange(input);
-            Player.DeleteRange(start, end);
+            var queueSlice = Request.ParseRange(input);
+            Player.DeleteRange(queueSlice);
         }
         return new();
     }
@@ -83,14 +82,7 @@ partial class CommandHandler
     Response PlChanges(long version)
     {
         // Naive implementation
-        if (version < Player.PlaylistVersion)
-        {
-            return PlaylistInfo();
-        }
-        else
-        {
-            return new();
-        }
+        return version < Player.PlaylistVersion ? PlaylistInfo() : new();
     }
 
     Response Clear()
@@ -99,22 +91,13 @@ partial class CommandHandler
         return new();
     }
 
-    Response Shuffle(string? range)
+    Response Shuffle(U8String? range)
     {
-        int start;
-        int end;
+        var queueSlice = range.HasValue
+            ? Request.ParseRange(range.Value)
+            : new(0, Player.Queue.Count - 1);
 
-        if (range is not null)
-        {
-            (start, end) = Request.ParseRange(range);
-        }
-        else
-        {
-            start = 0;
-            end = Player.Queue.Count - 1;
-        }
-
-        Player.ShuffleQueue(start, end);
+        Player.ShuffleQueue(queueSlice);
 
         return new();
     }

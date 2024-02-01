@@ -1,18 +1,19 @@
 using System.Buffers;
-using System.Collections.Immutable;
 using System.Net.Sockets;
-using System.Text;
 using Serilog;
+using Serilog.Events;
+using U8.IO;
 
 namespace Mpdfin.Mpd;
 
 class ClientStream : IAsyncDisposable
 {
-    readonly static ImmutableArray<byte> GREETING = [.."OK MPD 0.19.0\n"u8];
-    readonly static ImmutableArray<byte> OK = [.."OK\n"u8];
+    static U8String GREETING => u8("OK MPD 0.19.0\n");
+    static U8String OK => u8("OK\n");
+
     readonly TcpClient TcpClient;
     readonly NetworkStream Stream;
-    readonly StreamReader Reader;
+    readonly U8Reader<U8StreamSource> Reader;
     readonly SemaphoreSlim Lock;
     public bool EndOfStream { get; private set; }
 
@@ -21,18 +22,18 @@ class ClientStream : IAsyncDisposable
         Log.Debug($"Opening new connection from {client.Client.RemoteEndPoint}");
         TcpClient = client;
         Stream = client.GetStream();
-        Reader = new(Stream, Encoding.UTF8);
+        Reader = new(new(Stream));
         Lock = new(1, 1);
     }
 
     public Task WriteGreeting()
     {
-        return Write(GREETING.AsMemory());
+        return Write(GREETING);
     }
 
     public Task WriteResponse(Response response)
     {
-        if (!response.Contents.IsEmpty)
+        if (!response.Contents.IsEmpty && Log.IsEnabled(LogEventLevel.Debug))
         {
             var responseText = response.ToString();
             if (responseText.Length > 100)
@@ -47,14 +48,13 @@ class ClientStream : IAsyncDisposable
             Log.Debug("Writing empty response");
         }
 
-        response.Buffer.Write(OK.AsSpan());
+        response.Buffer.Write(OK);
         return Write(response.Contents);
     }
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")
     {
-        var line = $"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}\n";
-        return Write(Encoding.UTF8.GetBytes(line));
+        return Write(u8($"ACK [{(int)error}@{commandListNum}] {{{currentCommand.AsSpan()}}} {messageText.AsSpan()}\n"));
     }
 
     public async ValueTask DisposeAsync()
@@ -69,13 +69,13 @@ class ClientStream : IAsyncDisposable
     {
         while (true)
         {
-            string? line = null;
+            var line = U8String.Empty;
             using (await Lock.LockAsync())
             {
-                line = await Reader.ReadLineAsync(ct);
+                line = await Reader.ReadLineAsync(ct) ?? U8String.Empty;
             }
 
-            if (string.IsNullOrEmpty(line))
+            if (line.IsEmpty)
             {
                 Log.Debug("Got EOF, closing client stream");
                 EndOfStream = true;

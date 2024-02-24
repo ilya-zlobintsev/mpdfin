@@ -38,7 +38,7 @@ public class PlayerState
         Directory.CreateDirectory(DataDir());
 
         var filePath = FilePath();
-        using var file = File.OpenWrite(filePath);
+        await using var file = File.Create(filePath);
         await JsonSerializer.SerializeAsync(file, this, SerializerContext.Default.PlayerState);
         Log.Debug("Saved state");
     }

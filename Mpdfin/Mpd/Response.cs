@@ -90,4 +90,13 @@ readonly record struct Response : IU8Formattable
     {
         return u8(Buffer.WrittenMemory.Span).Replace("\n"u8, "; "u8);
     }
+
+    bool IUtf8SpanFormattable.TryFormat(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider)
+    {
+        throw new NotImplementedException();
+    }
 }

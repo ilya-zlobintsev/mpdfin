@@ -146,4 +146,13 @@ public readonly record struct Request : IU8Formattable
 
         return result ? new(start, end) : throw new FormatException($"Invalid range {input}");
     }
+
+    bool IUtf8SpanFormattable.TryFormat(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider)
+    {
+        throw new NotImplementedException();
+    }
 }

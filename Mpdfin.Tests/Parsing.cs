@@ -9,7 +9,7 @@ public class Parsing
     {
         Request request = new(u8("status"));
         Assert.Equal(Command.status, request.Command);
-        Assert.True(request.Args.Count == 0);
+        Assert.Empty(request.Args);
     }
 
     [Fact]

@@ -22,7 +22,7 @@ class ClientStream : IAsyncDisposable
         Log.Debug($"Opening new connection from {client.Client.RemoteEndPoint}");
         TcpClient = client;
         Stream = client.GetStream();
-        Reader = new(new(Stream));
+        Reader = Stream.AsU8Reader(disposeSource: false);
         Lock = new(1, 1);
     }
 
@@ -54,7 +54,7 @@ class ClientStream : IAsyncDisposable
 
     public Task WriteError(Ack error, uint commandListNum = 0, string currentCommand = "", string messageText = "")
     {
-        return Write(u8($"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}\n"));
+        return Write($"ACK [{(int)error}@{commandListNum}] {{{currentCommand}}} {messageText}\n");
     }
 
     public async ValueTask DisposeAsync()
@@ -102,5 +102,11 @@ class ClientStream : IAsyncDisposable
         {
             await Stream.WriteAsync(data);
         }
+    }
+
+    async Task Write(PooledU8Builder data)
+    {
+        using var streamLock = await Lock.LockAsync();
+        await Stream.WriteAsync(data);
     }
 }

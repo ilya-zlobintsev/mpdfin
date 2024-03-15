@@ -30,7 +30,7 @@ partial class CommandHandler
         var parts = uri.Split((byte)'/', U8SplitOptions.RemoveEmpty);
 
         var rootNode = Db.FilesystemRoot;
-        var pathBuilder = new InterpolatedU8StringHandler();
+        var pathBuilder = new InlineU8Builder();
         foreach (var part in parts)
         {
             rootNode = rootNode.Navigate(part);

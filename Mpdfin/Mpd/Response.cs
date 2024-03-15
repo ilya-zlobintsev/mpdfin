@@ -55,6 +55,13 @@ readonly record struct Response
         return Append(key, value.AsSpan());
     }
 
+    public Response Append(ReadOnlySpan<byte> key, ref InlineU8Builder value)
+    {
+        Append(key, value.Written);
+        value.Dispose();
+        return this;
+    }
+
     public Response Append(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Buffer.Write(key);

@@ -31,7 +31,7 @@ partial class CommandHandler
         if (Player.Elapsed is not null)
         {
             response.Append("elapsed"u8, Player.Elapsed.Value);
-            response.Append("time"u8, u8($"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}"));
+            response.Append("time"u8, $"{(int)Math.Floor(Player.Elapsed.Value)}:{Player.Duration}");
             response.Append("duration"u8, Player.Duration!.Value);
         }
 

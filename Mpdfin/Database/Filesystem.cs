@@ -31,9 +31,10 @@ public record Node
         Children = children;
     }
 
+    [Optimize]
     public Node? Navigate(U8String name)
     {
-        return Children.Find(child => child.Name == name);
+        return Children.FirstOrDefault(child => child.Name == name);
     }
 
     [Optimize]

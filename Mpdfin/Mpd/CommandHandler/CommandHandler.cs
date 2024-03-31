@@ -25,12 +25,11 @@ partial class CommandHandler
 
     public async Task HandleStream(ClientStream stream)
     {
-        Request? request;
-        while ((request = await stream.ReadRequest()) is not null)
+        while (await stream.ReadRequest() is Request request)
         {
             try
             {
-                var response = await HandleRequest(request.Value, stream);
+                var response = await HandleRequest(request, stream);
 
                 if (!stream.EndOfStream && response is not null)
                 {
@@ -92,24 +91,23 @@ partial class CommandHandler
         };
     }
 
-    async Task<Response> HandleCommandList(ClientStream stream, bool printOk)
+    async ValueTask<Response> HandleCommandList(ClientStream stream, bool printOk)
     {
         List<Request> requestList = [];
 
         bool end = false;
         Log.Debug("Processing command list");
-        Request? request;
-        while ((request = await stream.ReadRequest()) is not null)
+        while (await stream.ReadRequest() is Request request)
         {
-            switch (request.Value.Command)
+            switch (request.Command)
             {
                 case Command.command_list_end:
                     Log.Debug("Exiting command list");
                     end = true;
                     break;
                 default:
-                    Log.Debug($"Queueing command {request.Value.Command}");
-                    requestList.Add(request.Value);
+                    Log.Debug($"Queueing command {request.Command}");
+                    requestList.Add(request);
                     break;
             }
 

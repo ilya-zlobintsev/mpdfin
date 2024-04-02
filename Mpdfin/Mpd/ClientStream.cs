@@ -65,7 +65,7 @@ class ClientStream : IAsyncDisposable
         TcpClient.Dispose();
     }
 
-    public async ValueTask<Request?> ReadRequest(CancellationToken ct = default)
+    public async Task<Request?> ReadRequest(CancellationToken ct = default)
     {
         while (true)
         {

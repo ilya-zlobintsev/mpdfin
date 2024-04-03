@@ -31,15 +31,15 @@
 
   <ItemGroup>
     <PackageReference Include="Jellyfin.Sdk" Version="2022.6.11" />
-    <PackageReference Include="LibVLCSharp" Version="3.7.0" />
-    <PackageReference Include="Serilog" Version="3.0.1" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+    <PackageReference Include="LibVLCSharp" Version="3.8.2" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
     <PackageReference Include="DistIL.OptimizerTask" Version="0.6.1-beta">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="U8String" Version="0.11.10-alpha" />
-    <PackageReference Include="U8String.Tools" Version="0.11.10-alpha">
+    <PackageReference Include="U8String" Version="0.16.0-alpha" />
+    <PackageReference Include="U8String.Optimization" Version="0.16.0-alpha">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -48,7 +48,7 @@ public enum Command
     command_list_end,
 }
 
-public readonly record struct Request : IU8Formattable
+public readonly record struct Request
 {
     public readonly Command Command;
     public readonly List<U8String> Args;
@@ -68,7 +68,7 @@ public readonly record struct Request : IU8Formattable
 
         Args = [];
 
-        var argBuilder = new InterpolatedU8StringHandler();
+        var argBuilder = new InlineU8Builder();
         var runes = raw.Runes.GetEnumerator();
 
         while (runes.MoveNext())
@@ -127,13 +127,6 @@ public readonly record struct Request : IU8Formattable
     public override string ToString()
     {
         return $"{Command} {string.Join(" ", Args)}";
-    }
-
-    public U8String ToU8String(
-        ReadOnlySpan<char> format = default,
-        IFormatProvider? provider = null)
-    {
-        return u8($"{Command} {U8String.Join(' ', Args)}");
     }
 
     public static Range ParseRange(U8String input)

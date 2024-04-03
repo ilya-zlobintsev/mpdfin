@@ -1,11 +1,10 @@
 using System.Buffers;
 using System.Globalization;
 using System.Text;
-using U8.Abstractions;
 
 namespace Mpdfin.Mpd;
 
-readonly record struct Response : IU8Formattable
+readonly record struct Response
 {
     public ArrayBufferWriter<byte> Buffer { get; } = new();
 
@@ -56,6 +55,13 @@ readonly record struct Response : IU8Formattable
         return Append(key, value.AsSpan());
     }
 
+    public Response Append(ReadOnlySpan<byte> key, ref InlineU8Builder value)
+    {
+        Append(key, value.Written);
+        value.Dispose();
+        return this;
+    }
+
     public Response Append(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         Buffer.Write(key);
@@ -84,10 +90,5 @@ readonly record struct Response : IU8Formattable
     public override string ToString()
     {
         return Encoding.UTF8.GetString(Buffer.WrittenMemory.Span).Replace("\n", "; ");
-    }
-
-    public U8String ToU8String(ReadOnlySpan<char> _ = default, IFormatProvider? __ = null)
-    {
-        return u8(Buffer.WrittenMemory.Span).Replace("\n"u8, "; "u8);
     }
 }

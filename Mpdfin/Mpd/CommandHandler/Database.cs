@@ -30,7 +30,7 @@ partial class CommandHandler
         var parts = uri.Split((byte)'/', U8SplitOptions.RemoveEmpty);
 
         var rootNode = Db.FilesystemRoot;
-        var pathBuilder = new InterpolatedU8StringHandler();
+        var pathBuilder = new InlineU8Builder();
         foreach (var part in parts)
         {
             rootNode = rootNode.Navigate(part);
@@ -51,8 +51,14 @@ partial class CommandHandler
             }
             else if (node.Name is U8String nameValue)
             {
-                var value = !path.IsEmpty ? u8($"{path}/{nameValue}") : nameValue;
-                response.Append("directory"u8, value);
+                if (path.IsEmpty)
+                {
+                    response.Append("directory"u8, nameValue);
+                }
+                else
+                {
+                    response.Append("directory"u8, $"{path}/{nameValue}");
+                }
             }
         }
 

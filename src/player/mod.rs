@@ -1,14 +1,26 @@
-use crate::mpd::{subsystem::SubsystemNotifier, Subsystem};
+mod state;
+
+use self::state::State;
+use crate::{
+    database::Database,
+    mpd::{subsystem::SubsystemNotifier, Subsystem},
+};
+use std::{
+    cell::{Ref, RefCell},
+    rc::Rc,
+};
 use vlc::{Instance, Media, MediaPlayer, MediaPlayerAudioEx};
 
 pub struct Player {
     instance: Instance,
     media_player: MediaPlayer,
     subsystem_notifier: SubsystemNotifier,
+    state: Rc<RefCell<State>>,
+    database: Rc<RefCell<Database>>,
 }
 
 impl Player {
-    pub fn new(subsystem_notifier: SubsystemNotifier) -> Self {
+    pub fn new(subsystem_notifier: SubsystemNotifier, database: Rc<RefCell<Database>>) -> Self {
         let instance = Instance::new().expect("Could not initialize instance");
 
         let user_agent = env!("CARGO_PKG_NAME");
@@ -24,6 +36,8 @@ impl Player {
             instance,
             media_player,
             subsystem_notifier,
+            database,
+            state: Rc::default(),
         }
     }
 
@@ -64,6 +78,20 @@ impl Player {
 
     pub fn volume(&self) -> i32 {
         self.media_player.get_volume()
+    }
+
+    pub fn state(&self) -> Ref<'_, State> {
+        self.state.borrow()
+    }
+
+    pub fn add_item(&self, item_id: Rc<str>) -> usize {
+        let id = self.state.borrow_mut().add_item(item_id);
+        self.subsystem_notifier.notify(Subsystem::Playlist);
+        id
+    }
+
+    pub fn clear(&self) {
+        self.state.borrow_mut().queue.clear();
     }
 
     // fn send_event(&mut self, event: PlayerEvent) {

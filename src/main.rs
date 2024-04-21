@@ -65,7 +65,7 @@ fn main() -> anyhow::Result<()> {
 
         let subsystem_notifier = SubsystemNotifier::new();
 
-        let player = Player::new(subsystem_notifier.clone());
+        let player = Player::new(subsystem_notifier.clone(), db.clone());
 
         let server = Server {
             db,

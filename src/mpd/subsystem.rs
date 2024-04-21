@@ -1,8 +1,10 @@
+use super::{error::Error, Result};
 use event_listener::{Event, EventListener};
 use futures_lite::{Future, FutureExt};
 use log::trace;
 use std::{
     pin::Pin,
+    str::FromStr,
     sync::Arc,
     task::{Context, Poll},
 };
@@ -25,6 +27,13 @@ pub enum Subsystem {
     Message,
     Neighbor,
     Mount,
+}
+
+impl Subsystem {
+    /// [`from_str`] with the mpd error
+    pub fn try_from_str(value: &str) -> Result<Self> {
+        Self::from_str(value).map_err(|_| Error::InvalidArg(format!("Unknown subsystem '{value}'")))
+    }
 }
 
 // The index of the inner slice is the enum discriminant
@@ -65,14 +74,7 @@ pub struct SubsystemListener {
 }
 
 impl SubsystemListener {
-    pub fn listen_all(&mut self) -> ListenSubsystems<'_> {
-        ListenSubsystems {
-            listener: self,
-            subsystems: Subsystem::VARIANTS,
-        }
-    }
-
-    pub fn listen_filtered<'a>(&'a mut self, subsystems: &'a [Subsystem]) -> ListenSubsystems<'a> {
+    pub fn listen<'a>(&'a mut self, subsystems: &'a [Subsystem]) -> ListenSubsystems<'a> {
         ListenSubsystems {
             listener: self,
             subsystems,
@@ -115,6 +117,7 @@ impl<'a> Future for ListenSubsystems<'a> {
 mod tests {
     use super::{Subsystem, SubsystemNotifier};
     use futures_lite::future;
+    use strum::VariantArray;
 
     #[test]
     fn listen_all_subsystems() {
@@ -123,7 +126,7 @@ mod tests {
 
         notifier.notify(Subsystem::Database);
 
-        let notified_subsystem = future::block_on(listener.listen_all());
+        let notified_subsystem = future::block_on(listener.listen(Subsystem::VARIANTS));
         assert_eq!(vec![Subsystem::Database], notified_subsystem);
     }
 
@@ -132,9 +135,8 @@ mod tests {
         let notifier = SubsystemNotifier::new();
         let mut listener = notifier.listener();
 
-        let listener_handle = std::thread::spawn(move || {
-            future::block_on(listener.listen_filtered(&[Subsystem::Options]))
-        });
+        let listener_handle =
+            std::thread::spawn(move || future::block_on(listener.listen(&[Subsystem::Options])));
 
         notifier.notify(Subsystem::Database);
         assert!(!listener_handle.is_finished());
@@ -152,8 +154,8 @@ mod tests {
         notifier.notify(Subsystem::Database);
         notifier.notify(Subsystem::Mixer);
         notifier.notify(Subsystem::Options);
-        
-        let notified = future::block_on(listener.listen_filtered(&[Subsystem::Mixer, Subsystem::Options]));
+
+        let notified = future::block_on(listener.listen(&[Subsystem::Mixer, Subsystem::Options]));
         assert_eq!(vec![Subsystem::Mixer, Subsystem::Options], notified);
     }
 }

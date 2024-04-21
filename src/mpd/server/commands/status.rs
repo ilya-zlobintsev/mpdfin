@@ -1,6 +1,8 @@
 use super::CommandContext;
 use crate::mpd::{error::Error, server::read_request, Request, Response, Result, Subsystem};
 use futures_lite::future;
+use std::borrow::Cow;
+use strum::VariantArray;
 
 pub fn status(ctx: CommandContext<'_>) -> Response {
     Response::new()
@@ -13,8 +15,23 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
         .field("playlistlength", 0)
 }
 
+pub fn current_song(ctx: CommandContext<'_>) -> Result<Response> {
+    Ok(Response::new())
+}
+
 pub async fn idle(ctx: CommandContext<'_>) -> Result<Response> {
     let mut buf = String::with_capacity("noidle\n".len());
+
+    let subsystems = if ctx.args.is_empty() {
+        Cow::Borrowed(Subsystem::VARIANTS)
+    } else {
+        let vec = ctx
+            .args
+            .iter()
+            .map(|arg| Subsystem::try_from_str(arg))
+            .collect::<Result<Vec<_>>>()?;
+        Cow::Owned(vec)
+    };
 
     enum IdleInterruption<'a> {
         Request(Result<Option<Request<'a>>>),
@@ -23,7 +40,7 @@ pub async fn idle(ctx: CommandContext<'_>) -> Result<Response> {
 
     let interruption = future::or(
         async { IdleInterruption::Request(read_request(ctx.stream, &mut buf).await.transpose()) },
-        async { IdleInterruption::Notification(ctx.subsystem_listener.listen_all().await) },
+        async { IdleInterruption::Notification(ctx.subsystem_listener.listen(&subsystems).await) },
     )
     .await;
 

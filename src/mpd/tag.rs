@@ -60,6 +60,12 @@ impl BaseItemDto {
             Tag::Date => self
                 .premiere_date
                 .map(|date| vec![date.format("%Y-%m-%d").to_string().into()]),
+            Tag::Genre => Some(
+                self.genres
+                    .iter()
+                    .map(|genre| genre.as_str().into())
+                    .collect(),
+            ),
             _ => None,
         }
     }

@@ -12,10 +12,10 @@ blocking = "1.5.1"
 futures-lite = "2.3.0"
 
 vlc-rs = { git = "https://code.videolan.org/videolan/vlc-rs" }
+souvlaki = "0.7.3"
 
 toml = "0.8.8"
 dirs = "5.0.1"
-souvlaki = "0.7.3"
 
 serde = { version = "1.0.192", features = ["derive", "rc"] }
 serde_json = "1.0.116"
@@ -23,6 +23,7 @@ serde_urlencoded = "0.7.1"
 strum = { version = "0.26.2", features = ["derive"] }
 anyhow = "1.0.82"
 chrono = { version = "0.4.38", features = ["serde"] }
+indexmap = { version = "2.2.6", features = ["serde"] }
 
 log = "0.4.21"
 simple_logger = "4.3.3"

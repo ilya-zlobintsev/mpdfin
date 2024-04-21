@@ -80,20 +80,30 @@ async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Respon
     use commands::*;
     let response = match command {
         "ping" => Response::new(),
+
         "status" => status::status(ctx),
+        "currentsong" => status::current_song(ctx)?,
         "idle" => status::idle(ctx).await?,
+        // Ignore if not currently idling
+        "noidle" => Response::new(),
+
         "find" => database::find(ctx)?,
         "lsinfo" => database::lsinfo(ctx),
         "list" => database::list(ctx)?,
-        "plchanges" => playlist::plchanges(),
+
+        "add" => queue::add(ctx)?,
+        "addid" => queue::add_id(ctx)?,
+        "playlistinfo" => queue::playlist_info(ctx)?,
+        "plchanges" => queue::plchanges(),
+        "clear" => queue::clear(ctx),
+
         "playid" => playback::playid(ctx)?,
         "pause" => playback::pause(ctx)?,
         "getvol" => playback::getvol(ctx),
         "setvol" => playback::setvol(ctx)?,
+
         "outputs" => Response::new(),
         "decoders" => Response::new(),
-        // Ignore if not currently idling
-        "noidle" => Response::new(),
         other => return Err(Error::UnknownCommand(other.to_owned())),
     };
     Ok(response)

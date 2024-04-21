@@ -45,9 +45,7 @@ impl Response {
         self.add_field("file", &item.id);
         for tag in Tag::iter() {
             if let Some(values) = item.get_tag_values(tag) {
-                for value in values {
-                    self.add_field(tag, value);
-                }
+                self.add_repeated_field(tag, &values);
             }
         }
     }

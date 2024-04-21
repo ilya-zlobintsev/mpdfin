@@ -5,17 +5,35 @@ use std::borrow::Cow;
 use strum::VariantArray;
 
 pub fn status(ctx: CommandContext<'_>) -> Response {
-    Response::new()
-        .field("volume", ctx.server.player.volume())
+    let player = ctx.player();
+    let player_state = player.state();
+
+    let mut response = Response::new()
+        .field("volume", ctx.player().volume())
         .field("repeat", 0)
         .field("random", 0)
         .field("single", 0)
-        .field("consume", 0)
-        .field("playlist", 0)
-        .field("playlistlength", 0)
+        .field("consume", 0);
+
+    if let Some(current_pos) = player_state.current_pos {
+        let (queue_id, _item) = &player_state.queue.get_index(current_pos).unwrap();
+        response.add_field("song", current_pos);
+        response.add_field("songid", queue_id);
+    }
+
+    let playback_state = match player.playback_state() {
+        vlc::State::Playing => "play",
+        vlc::State::Paused => "pause",
+        _ => "stop",
+    };
+
+    response
+        .field("state", playback_state)
+        .field("playlist", player_state.playlist_version)
+        .field("playlistlength", player_state.queue.len())
 }
 
-pub fn current_song(ctx: CommandContext<'_>) -> Result<Response> {
+pub fn current_song(_ctx: CommandContext<'_>) -> Result<Response> {
     Ok(Response::new())
 }
 

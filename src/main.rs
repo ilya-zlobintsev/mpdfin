@@ -8,7 +8,7 @@ use mpdfin::{
     config::Config,
     database::Database,
     jellyfin::{self, ClientSettings},
-    mpd::{server::Server, subsystem::SubsystemNotifier},
+    mpd::{Server, SubsystemNotifier},
     player::Player,
 };
 use std::{cell::RefCell, rc::Rc, str::FromStr};
@@ -87,7 +87,7 @@ fn main() -> anyhow::Result<()> {
                     let server = server.clone();
                     ex.spawn(async move {
                         if let Err(err) = server.handle_stream(stream).await {
-                            error!("Error processing stream: {err}");
+                            error!("Error processing stream: {err:#}");
                         }
                     })
                     .detach();

@@ -9,7 +9,7 @@ use std::{
     cell::{Ref, RefCell},
     rc::Rc,
 };
-use vlc::{Instance, Media, MediaPlayer, MediaPlayerAudioEx};
+use vlc::{EventType, Instance, Media, MediaPlayer, MediaPlayerAudioEx};
 
 pub struct Player {
     instance: Instance,
@@ -27,10 +27,24 @@ impl Player {
         instance.set_user_agent(user_agent, user_agent);
 
         let media_player = MediaPlayer::new(&instance).expect("Could not initialize media player");
-        // let (event_sender, _) = broadcast::channel(10);
 
-        // let event_manager = media_player.event_manager();
-        // event_manager.attach(EventType::, callback)
+        let event_manager = media_player.event_manager();
+
+        for event_type in [
+            EventType::MediaPlayerPlaying,
+            EventType::MediaPlayerStopped,
+            EventType::MediaPlayerPaused,
+            EventType::MediaPlayerEndReached,
+            EventType::MediaStateChanged,
+        ] {
+            let subsystem_notifier = subsystem_notifier.clone();
+            event_manager
+                .attach(event_type, move |_, _| {
+                    subsystem_notifier.notify(Subsystem::Player);
+                    subsystem_notifier.notify(Subsystem::Mixer);
+                })
+                .unwrap();
+        }
 
         Self {
             instance,
@@ -84,14 +98,22 @@ impl Player {
         self.state.borrow()
     }
 
-    pub fn add_item(&self, item_id: Rc<str>) -> usize {
+    pub fn add_item(&self, item_id: Rc<str>) -> Option<u64> {
+        if !self.database.borrow().items.contains_key(&item_id) {
+            return None;
+        }
+
         let id = self.state.borrow_mut().add_item(item_id);
         self.subsystem_notifier.notify(Subsystem::Playlist);
-        id
+        Some(id)
     }
 
     pub fn clear(&self) {
         self.state.borrow_mut().queue.clear();
+    }
+
+    pub fn playback_state(&self) -> vlc::State {
+        self.media_player.state()
     }
 
     // fn send_event(&mut self, event: PlayerEvent) {

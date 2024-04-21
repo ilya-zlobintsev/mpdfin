@@ -3,7 +3,7 @@ use crate::jellyfin::base::BaseItemDto;
 use futures_lite::{AsyncWrite, AsyncWriteExt};
 use std::fmt;
 use std::io::{self, Write};
-use strum::IntoEnumIterator;
+use strum::VariantArray;
 
 pub struct Response {
     data: Vec<u8>,
@@ -43,11 +43,19 @@ impl Response {
 
     pub fn add_item(&mut self, item: &BaseItemDto) {
         self.add_field("file", &item.id);
-        for tag in Tag::iter() {
-            if let Some(values) = item.get_tag_values(tag) {
+        for tag in Tag::VARIANTS {
+            if let Some(values) = item.get_tag_values(*tag) {
                 self.add_repeated_field(tag, &values);
             }
         }
+    }
+
+    pub fn extend(&mut self, other: &Self) {
+        self.data.extend_from_slice(&other.data);
+    }
+
+    pub fn add_list_ok(&mut self) {
+        writeln!(self.data, "list_OK").unwrap();
     }
 
     pub async fn write<W: AsyncWrite + Unpin>(mut self, w: &mut W) -> io::Result<()> {

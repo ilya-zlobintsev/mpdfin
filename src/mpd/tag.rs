@@ -2,9 +2,9 @@ use crate::mpd::Result;
 use crate::{jellyfin::base::BaseItemDto, mpd::Error};
 use std::borrow::Cow;
 use std::str::FromStr;
-use strum::{Display, EnumIter, EnumString};
+use strum::{Display, EnumString, VariantArray};
 
-#[derive(EnumString, Display, Debug, PartialEq, Eq, EnumIter, Clone, Copy)]
+#[derive(EnumString, Display, Debug, PartialEq, Eq, Clone, Copy, VariantArray)]
 #[strum(ascii_case_insensitive)]
 pub enum Tag {
     Artist,

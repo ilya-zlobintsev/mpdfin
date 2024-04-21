@@ -77,6 +77,14 @@ impl Server {
 }
 
 async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Response> {
+    match command {
+        "command_list_begin" => handle_command_list(ctx, false).await,
+        "command_list_ok_begin" => handle_command_list(ctx, true).await,
+        _ => handle_command(command, ctx).await,
+    }
+}
+
+async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Response> {
     use commands::*;
     let response = match command {
         "ping" => Response::new(),
@@ -94,13 +102,15 @@ async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Respon
         "add" => queue::add(ctx)?,
         "addid" => queue::add_id(ctx)?,
         "playlistinfo" => queue::playlist_info(ctx)?,
-        "plchanges" => queue::plchanges(),
+        "plchanges" => queue::plchanges(ctx)?,
         "clear" => queue::clear(ctx),
 
         "playid" => playback::playid(ctx)?,
         "pause" => playback::pause(ctx)?,
         "getvol" => playback::getvol(ctx),
         "setvol" => playback::setvol(ctx)?,
+
+        "tagtypes" => connection::tag_types(ctx)?,
 
         "outputs" => Response::new(),
         "decoders" => Response::new(),
@@ -126,4 +136,39 @@ async fn read_request<'a, R: AsyncRead + AsyncWrite + Unpin>(
         }
         _ => None,
     }
+}
+
+async fn handle_command_list(ctx: CommandContext<'_>, print_ok: bool) -> Result<Response> {
+    let mut buf = String::new();
+    let mut requests = Vec::new();
+
+    while let Some(request) = read_request(ctx.stream, &mut buf).await.transpose()? {
+        if request.command == "command_list_end" {
+            break;
+        }
+
+        requests.push((request.command.to_owned(), request.args));
+        buf.clear();
+    }
+
+    debug!("Processing command list of {} requests", requests.len());
+
+    let mut response = Response::new();
+
+    for (command, args) in requests {
+        let ctx = CommandContext {
+            args,
+            server: ctx.server,
+            stream: ctx.stream,
+            subsystem_listener: ctx.subsystem_listener,
+        };
+        let command_response = handle_command(&command, ctx).await?;
+        response.extend(&command_response);
+
+        if print_ok {
+            response.add_list_ok();
+        }
+    }
+
+    Ok(response)
 }

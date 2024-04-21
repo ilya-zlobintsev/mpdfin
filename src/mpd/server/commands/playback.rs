@@ -2,12 +2,23 @@ use super::CommandContext;
 use crate::mpd::{error::Error, Response, Result};
 
 pub fn playid(ctx: CommandContext<'_>) -> Result<Response> {
-    let id = ctx
+    let queue_id = ctx
         .args
         .first()
-        .ok_or_else(|| Error::InvalidArg("Missing id".to_owned()))?;
+        .ok_or_else(|| Error::InvalidArg("Missing id".to_owned()))?
+        .parse::<u64>()
+        .map_err(|_| Error::InvalidArg("Invalid item id".to_owned()))?;
 
-    let url = ctx.server.jellyfin_client.get_audio_stream_url(id);
+    let state = ctx.player().state();
+    let item = state
+        .queue
+        .get(&queue_id)
+        .ok_or_else(|| Error::InvalidArg("Could not find id in queue".to_owned()))?;
+
+    let url = ctx
+        .server
+        .jellyfin_client
+        .get_audio_stream_url(&item.item_id);
     ctx.server.player.play_url(&url);
 
     Ok(Response::new())

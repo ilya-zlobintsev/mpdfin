@@ -34,12 +34,13 @@ pub fn lsinfo(ctx: CommandContext<'_>) -> Response {
             for (name, node) in dir {
                 match node {
                     TreeNode::Directory(_) => {
-                        let name = if let Some(request_url) = request_url {
-                            Cow::Owned(format!("{request_url}/{name}"))
-                        } else {
-                            Cow::Borrowed(name)
-                        };
-                        response.add_field("directory", name)
+                        let name =
+                            if let Some(request_url) = request_url.filter(|url| !url.is_empty()) {
+                                Cow::Owned(format!("{request_url}/{name}"))
+                            } else {
+                                Cow::Borrowed(name)
+                            };
+                        response.add_field("directory", name);
                     }
                     TreeNode::File(id) => {
                         let item = db.items.get(id).unwrap();

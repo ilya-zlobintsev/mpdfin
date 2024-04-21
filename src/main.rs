@@ -8,7 +8,7 @@ use mpdfin::{
     config::Config,
     database::Database,
     jellyfin::{self, ClientSettings},
-    mpd::server::Server,
+    mpd::{server::Server, subsystem::SubsystemNotifier},
     player::Player,
 };
 use std::{cell::RefCell, rc::Rc, str::FromStr};
@@ -63,12 +63,15 @@ fn main() -> anyhow::Result<()> {
             };
         let db = Rc::new(RefCell::new(db));
 
-        let player = Player::new();
+        let subsystem_notifier = SubsystemNotifier::new();
+
+        let player = Player::new(subsystem_notifier.clone());
 
         let server = Server {
             db,
             jellyfin_client,
             player: Rc::new(player),
+            subsystem_notifier,
         };
 
         let _media_controls = start_media_control(&ex, server.clone());

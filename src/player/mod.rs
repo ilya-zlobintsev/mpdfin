@@ -1,15 +1,14 @@
-pub mod event;
-
-use vlc::{Instance, Media, MediaPlayer};
+use crate::mpd::{subsystem::SubsystemNotifier, Subsystem};
+use vlc::{Instance, Media, MediaPlayer, MediaPlayerAudioEx};
 
 pub struct Player {
     instance: Instance,
     media_player: MediaPlayer,
-    // event_sender: broadcast::Sender<PlayerEvent>,
+    subsystem_notifier: SubsystemNotifier,
 }
 
 impl Player {
-    pub fn new() -> Self {
+    pub fn new(subsystem_notifier: SubsystemNotifier) -> Self {
         let instance = Instance::new().expect("Could not initialize instance");
 
         let user_agent = env!("CARGO_PKG_NAME");
@@ -18,10 +17,13 @@ impl Player {
         let media_player = MediaPlayer::new(&instance).expect("Could not initialize media player");
         // let (event_sender, _) = broadcast::channel(10);
 
+        // let event_manager = media_player.event_manager();
+        // event_manager.attach(EventType::, callback)
+
         Self {
             instance,
             media_player,
-            // event_sender,
+            subsystem_notifier,
         }
     }
 
@@ -55,6 +57,15 @@ impl Player {
         self.media_player.stop();
     }
 
+    pub fn set_volume(&self, volume: i32) {
+        self.media_player.set_volume(volume).unwrap();
+        self.subsystem_notifier.notify(Subsystem::Mixer);
+    }
+
+    pub fn volume(&self) -> i32 {
+        self.media_player.get_volume()
+    }
+
     // fn send_event(&mut self, event: PlayerEvent) {
     //     let _ = self.event_sender.send(event);
     // }
@@ -62,10 +73,4 @@ impl Player {
     // pub fn subscribe(&self) -> broadcast::Receiver<PlayerEvent> {
     //     self.event_sender.subscribe()
     // }
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Self::new()
-    }
 }

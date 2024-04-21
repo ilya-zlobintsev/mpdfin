@@ -1,7 +1,10 @@
 mod commands;
 
-use super::{Error, Request, Response, Result, MPD_VERSION};
-use crate::{database::Database, jellyfin::JellyfinClient, player::Player};
+use super::{subsystem::SubsystemNotifier, Error, Request, Response, Result, MPD_VERSION};
+use crate::{
+    database::Database, jellyfin::JellyfinClient, mpd::server::commands::CommandContext,
+    player::Player,
+};
 use anyhow::Context;
 use async_net::TcpStream;
 use futures_lite::{io::BufReader, AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt};
@@ -13,12 +16,15 @@ pub struct Server {
     pub db: Rc<RefCell<Database>>,
     pub jellyfin_client: JellyfinClient,
     pub player: Rc<Player>,
+    pub subsystem_notifier: SubsystemNotifier,
 }
 
 impl Server {
     pub async fn handle_stream(&self, stream: TcpStream) -> anyhow::Result<()> {
         let peer_addr = stream.peer_addr().context("Unknown peer address")?;
         info!("Got new connection from '{peer_addr}'");
+
+        let mut subsystem_listener = self.subsystem_notifier.listener();
 
         let mut stream = BufReader::new(stream);
 
@@ -34,7 +40,15 @@ impl Server {
                 Ok(request) => {
                     debug!("Handling request {request:?}");
                     let command = request.command;
-                    let result = self.handle_request(request, &mut stream).await;
+
+                    let ctx = CommandContext {
+                        server: self,
+                        stream: &mut stream,
+                        args: request.args,
+                        subsystem_listener: &mut subsystem_listener,
+                    };
+                    let result = handle_request(command, ctx).await;
+
                     debug!("Response: {result:?}");
                     match result {
                         Ok(response) => {
@@ -60,31 +74,29 @@ impl Server {
         info!("Connection from '{peer_addr}' closed");
         Ok(())
     }
+}
 
-    async fn handle_request<R: AsyncRead + AsyncWrite + Unpin>(
-        &self,
-        request: Request<'_>,
-        stream: &mut BufReader<R>,
-    ) -> Result<Response> {
-        use commands::*;
-        let response = match request.command {
-            "ping" => Response::new(),
-            "status" => status::status(),
-            "idle" => status::idle(self, stream).await?,
-            "find" => database::find(self, request.args)?,
-            "lsinfo" => database::lsinfo(self, request.args),
-            "list" => database::list(self, request.args)?,
-            "plchanges" => playlist::plchanges(),
-            "playid" => playback::playid(self, request.args)?,
-            "pause" => playback::pause(self, request.args)?,
-            "outputs" => Response::new(),
-            "decoders" => Response::new(),
-            // Ignore if not currently idling
-            "noidle" => Response::new(),
-            other => return Err(Error::UnknownCommand(other.to_owned())),
-        };
-        Ok(response)
-    }
+async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Response> {
+    use commands::*;
+    let response = match command {
+        "ping" => Response::new(),
+        "status" => status::status(ctx),
+        "idle" => status::idle(ctx).await?,
+        "find" => database::find(ctx)?,
+        "lsinfo" => database::lsinfo(ctx),
+        "list" => database::list(ctx)?,
+        "plchanges" => playlist::plchanges(),
+        "playid" => playback::playid(ctx)?,
+        "pause" => playback::pause(ctx)?,
+        "getvol" => playback::getvol(ctx),
+        "setvol" => playback::setvol(ctx)?,
+        "outputs" => Response::new(),
+        "decoders" => Response::new(),
+        // Ignore if not currently idling
+        "noidle" => Response::new(),
+        other => return Err(Error::UnknownCommand(other.to_owned())),
+    };
+    Ok(response)
 }
 
 /// Note: it is the caller's responsibility to clear the buffer

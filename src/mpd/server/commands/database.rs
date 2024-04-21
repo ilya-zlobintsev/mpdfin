@@ -1,16 +1,16 @@
+use super::CommandContext;
 use crate::{
     database::TreeNode,
     mpd::{
-        server::Server,
         Error, Result,
         {filters::FilterExpression, Response, Tag},
     },
 };
 use std::borrow::Cow;
 
-pub fn find(server: &Server, args: Vec<String>) -> Result<Response> {
-    let filter = FilterExpression::parse(args)?;
-    let db = server.db.borrow();
+pub fn find(ctx: CommandContext<'_>) -> Result<Response> {
+    let filter = FilterExpression::parse(ctx.args)?;
+    let db = ctx.server.db.borrow();
     Ok(db
         .items
         .values()
@@ -18,10 +18,10 @@ pub fn find(server: &Server, args: Vec<String>) -> Result<Response> {
         .fold(Response::new(), |response, item| response.item(item)))
 }
 
-pub fn lsinfo(server: &Server, args: Vec<String>) -> Response {
-    let db = server.db.borrow();
+pub fn lsinfo(ctx: CommandContext<'_>) -> Response {
+    let db = ctx.server.db.borrow();
 
-    let request_url = args.first();
+    let request_url = ctx.args.first();
     let url = request_url.as_ref().map(|s| s.as_str()).unwrap_or_default();
 
     let Some(node) = db.tree_root.navigate(url) else {
@@ -63,14 +63,14 @@ pub fn lsinfo(server: &Server, args: Vec<String>) -> Response {
     }
 }
 
-pub fn list(server: &Server, args: Vec<String>) -> Result<Response> {
-    let mut args = args.into_iter();
+pub fn list(ctx: CommandContext<'_>) -> Result<Response> {
+    let mut args = ctx.args.into_iter();
     let raw_tag = args
         .next()
         .ok_or_else(|| Error::InvalidArg("Missing tag argument".to_owned()))?;
     let tag = Tag::try_from_str(&raw_tag)?;
 
-    let db = server.db.borrow();
+    let db = ctx.server.db.borrow();
 
     let mut values = db
         .items

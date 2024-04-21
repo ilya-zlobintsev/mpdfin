@@ -1,12 +1,10 @@
-use crate::mpd::{
-    server::{read_request, Server},
-    Error, Response, Result,
-};
-use futures_lite::{io::BufReader, AsyncRead, AsyncWrite};
+use super::CommandContext;
+use crate::mpd::{error::Error, server::read_request, Request, Response, Result, Subsystem};
+use futures_lite::future;
 
-pub fn status() -> Response {
+pub fn status(ctx: CommandContext<'_>) -> Response {
     Response::new()
-        .field("volume", 50)
+        .field("volume", ctx.server.player.volume())
         .field("repeat", 0)
         .field("random", 0)
         .field("single", 0)
@@ -15,21 +13,35 @@ pub fn status() -> Response {
         .field("playlistlength", 0)
 }
 
-pub async fn idle<R: AsyncRead + AsyncWrite + Unpin>(
-    _server: &Server,
-    stream: &mut BufReader<R>,
-) -> Result<Response> {
+pub async fn idle(ctx: CommandContext<'_>) -> Result<Response> {
     let mut buf = String::with_capacity("noidle\n".len());
-    match read_request(stream, &mut buf).await.transpose()? {
-        Some(request) => {
-            if request.command == "noidle" {
-                Ok(Response::new())
-            } else {
-                Err(Error::InvalidArg(
-                    "Only the 'noidle' command is allowed when idling".to_owned(),
-                ))
+
+    enum IdleInterruption<'a> {
+        Request(Result<Option<Request<'a>>>),
+        Notification(Vec<Subsystem>),
+    }
+
+    let interruption = future::or(
+        async { IdleInterruption::Request(read_request(ctx.stream, &mut buf).await.transpose()) },
+        async { IdleInterruption::Notification(ctx.subsystem_listener.listen_all().await) },
+    )
+    .await;
+
+    match interruption {
+        IdleInterruption::Request(request) => match request? {
+            Some(request) => {
+                if request.command == "noidle" {
+                    Ok(Response::new())
+                } else {
+                    Err(Error::InvalidArg(
+                        "Only the 'noidle' command is allowed when idling".to_owned(),
+                    ))
+                }
             }
+            None => Ok(Response::new()),
+        },
+        IdleInterruption::Notification(subsystems) => {
+            Ok(Response::new().repeated_field("changed", &subsystems))
         }
-        None => Ok(Response::new()),
     }
 }

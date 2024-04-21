@@ -822,6 +822,7 @@ dependencies = [
  "chrono",
  "criterion",
  "dirs",
+ "event-listener 5.3.0",
  "futures-lite",
  "log",
  "serde",

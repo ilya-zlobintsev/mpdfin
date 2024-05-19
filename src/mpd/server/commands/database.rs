@@ -2,19 +2,31 @@ use super::CommandContext;
 use crate::{
     database::TreeNode,
     mpd::{
-        Error, Result,
-        {filters::FilterExpression, Response, Tag},
+        filters::{FilterExpression, FilterMode},
+        Error, Response, Result, Tag,
     },
 };
+use log::debug;
 use std::borrow::Cow;
 
 pub fn find(ctx: CommandContext<'_>) -> Result<Response> {
-    let filter = FilterExpression::parse(ctx.args)?;
+    let filter = FilterExpression::parse(ctx.args, FilterMode::Find)?;
     let db = ctx.server.db.borrow();
     Ok(db
         .items
         .values()
         .filter(|item| filter.match_item(item, true))
+        .fold(Response::new(), |response, item| response.item(item)))
+}
+
+pub fn search(ctx: CommandContext<'_>) -> Result<Response> {
+    let filter = FilterExpression::parse(ctx.args, FilterMode::Search)?;
+    debug!("Searching by expression {filter:?}");
+    let db = ctx.server.db.borrow();
+    Ok(db
+        .items
+        .values()
+        .filter(|item| filter.match_item(item, false))
         .fold(Response::new(), |response, item| response.item(item)))
 }
 

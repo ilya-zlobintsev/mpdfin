@@ -20,13 +20,10 @@ impl State {
         id
     }
 
-    // pub fn items<'a>(
-    //     &'a self,
-    //     db: &'a Database,
-    // ) -> impl Iterator<Item = (&'a QueueItem, &'a BaseItemDto)> {
-
-    //     self.queue.iter()
-    // }
+    pub fn current_item_id(&self) -> Option<&str> {
+        self.current_pos
+            .map(|pos| self.queue.get_index(pos).unwrap().1.item_id.as_ref())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

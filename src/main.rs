@@ -3,15 +3,16 @@ use async_executor::LocalExecutor;
 use async_net::TcpListener;
 use futures_lite::{future, StreamExt};
 use jellyfin::{user::AuthenticateUserByName, JellyfinClient};
-use log::{error, info};
+use log::{debug, error, info};
 use mpdfin::{
     config::Config,
     database::Database,
     jellyfin::{self, ClientSettings},
-    mpd::{Server, SubsystemNotifier},
+    mpd::{Server, Subsystem, SubsystemNotifier},
     player::Player,
 };
-use std::{cell::RefCell, rc::Rc, str::FromStr};
+use souvlaki::MediaPosition;
+use std::{cell::RefCell, rc::Rc, str::FromStr, time::Duration};
 
 fn main() -> anyhow::Result<()> {
     let ex = LocalExecutor::new();
@@ -65,7 +66,11 @@ fn main() -> anyhow::Result<()> {
 
         let subsystem_notifier = SubsystemNotifier::new();
 
-        let player = Player::new(subsystem_notifier.clone(), db.clone());
+        let player = Player::new(
+            subsystem_notifier.clone(),
+            db.clone(),
+            jellyfin_client.clone(),
+        );
 
         let server = Server {
             db,
@@ -74,7 +79,7 @@ fn main() -> anyhow::Result<()> {
             subsystem_notifier,
         };
 
-        let _media_controls = start_media_control(&ex, server.clone());
+        start_media_control(&ex, server.clone());
 
         let tcp_listener = TcpListener::bind(&config.general.listen_host)
             .await
@@ -100,7 +105,7 @@ fn main() -> anyhow::Result<()> {
     }))
 }
 
-fn start_media_control(ex: &LocalExecutor, server: Server) -> Option<souvlaki::MediaControls> {
+fn start_media_control(ex: &LocalExecutor, server: Server) {
     let config = souvlaki::PlatformConfig {
         display_name: env!("CARGO_PKG_NAME"),
         dbus_name: env!("CARGO_PKG_NAME"),
@@ -109,15 +114,16 @@ fn start_media_control(ex: &LocalExecutor, server: Server) -> Option<souvlaki::M
 
     let (tx, rx) = async_channel::bounded(10);
 
+    let player = server.player.clone();
     ex.spawn(async move {
         while let Ok(event) = rx.recv().await {
             match event {
-                souvlaki::MediaControlEvent::Play => server.player.play(),
-                souvlaki::MediaControlEvent::Pause => server.player.pause(),
-                souvlaki::MediaControlEvent::Toggle => server.player.toggle(),
+                souvlaki::MediaControlEvent::Play => player.play(),
+                souvlaki::MediaControlEvent::Pause => player.pause(),
+                souvlaki::MediaControlEvent::Toggle => player.toggle(),
                 souvlaki::MediaControlEvent::Next => todo!(),
                 souvlaki::MediaControlEvent::Previous => todo!(),
-                souvlaki::MediaControlEvent::Stop => server.player.stop(),
+                souvlaki::MediaControlEvent::Stop => player.stop(),
                 souvlaki::MediaControlEvent::Seek(_) => todo!(),
                 souvlaki::MediaControlEvent::SeekBy(_, _) => todo!(),
                 souvlaki::MediaControlEvent::SetPosition(_) => todo!(),
@@ -137,21 +143,65 @@ fn start_media_control(ex: &LocalExecutor, server: Server) -> Option<souvlaki::M
                 })
                 .expect("Could not attach media key events");
 
-            controls
-                .set_metadata(souvlaki::MediaMetadata {
-                    title: Some("Placeholder"),
-                    ..Default::default()
-                })
-                .expect("Could not set media metadata");
+            let mut subsystem_listener = server.subsystem_notifier.listener();
+            ex.spawn(async move {
+                loop {
+                    subsystem_listener.listen(&[Subsystem::Player]).await;
 
-            controls
-                .set_playback(souvlaki::MediaPlayback::Playing { progress: None })
-                .expect("Could not set media playback status");
-            Some(controls)
+                    let mut metadata = souvlaki::MediaMetadata::default();
+
+                    #[allow(unused_assignments)] // Stores the value that metadata references
+                    let mut artist = None;
+
+                    let db = server.db.borrow();
+                    if let Some(item_id) = server.player.state().current_item_id() {
+                        if let Some(item) = db.items.get(item_id) {
+                            metadata.title = item.name.as_deref();
+                            metadata.album = item.album.as_deref();
+                            metadata.duration = item
+                                .run_time_ticks
+                                .map(|ticks| Duration::from_millis(ticks / 10000));
+
+                            artist = item.album_artist.clone().or_else(|| {
+                                if item.artists.is_empty() {
+                                    None
+                                } else {
+                                    Some(item.artists.join(", "))
+                                }
+                            });
+                            metadata.artist = artist.as_deref();
+                        }
+                    }
+
+                    let progress = server
+                        .player
+                        .media_position()
+                        .and_then(|position| Some((metadata.duration?, position)))
+                        .map(|(duration, position)| {
+                            MediaPosition(Duration::from_millis(
+                                (duration.as_millis() as f32 * position) as u64,
+                            ))
+                        });
+                    let playback = match server.player.playback_state() {
+                        vlc::State::Playing => souvlaki::MediaPlayback::Playing { progress },
+                        vlc::State::Paused => souvlaki::MediaPlayback::Paused { progress },
+                        _ => souvlaki::MediaPlayback::Stopped,
+                    };
+                    debug!("Updating system media plabyack status to {playback:?}");
+
+                    controls
+                        .set_playback(playback)
+                        .expect("Could not set media playback status");
+
+                    controls
+                        .set_metadata(metadata)
+                        .expect("Could not set media metadata");
+                }
+            })
+            .detach();
         }
         Err(err) => {
             error!("Could not initialize media keys controls: {err:#}");
-            None
         }
     }
 }

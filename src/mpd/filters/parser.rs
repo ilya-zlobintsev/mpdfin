@@ -1,9 +1,13 @@
 use super::FilterExpression;
+use super::FilterMode;
 use crate::mpd::{Error, Result, Tag};
 use std::str::CharIndices;
 
 impl FilterExpression {
-    pub fn parse(args: impl IntoIterator<Item = String>) -> Result<Self> {
+    pub fn parse(
+        args: impl IntoIterator<Item = String>,
+        legacy_filter_mode: FilterMode,
+    ) -> Result<Self> {
         let mut args = args.into_iter();
 
         let first_arg = args
@@ -20,14 +24,23 @@ impl FilterExpression {
 
             let tag = Tag::try_from_str(&first_arg)?;
 
-            let mut filters = vec![Self::TagMatch(tag, value)];
+            let filter = match legacy_filter_mode {
+                FilterMode::Find => Self::TagMatch(tag, value),
+                FilterMode::Search => Self::TagContains(tag, value),
+            };
+            let mut filters = vec![filter];
 
             while let Some(raw_tag) = args.next() {
                 let value = args
                     .next()
                     .ok_or_else(|| Error::InvalidArg("Missing filter value".to_owned()))?;
                 let tag = Tag::try_from_str(&raw_tag)?;
-                filters.push(Self::TagMatch(tag, value));
+
+                let filter = match legacy_filter_mode {
+                    FilterMode::Find => Self::TagMatch(tag, value),
+                    FilterMode::Search => Self::TagContains(tag, value),
+                };
+                filters.push(filter);
             }
 
             Ok(Self::And(filters))
@@ -171,17 +184,22 @@ fn consume_until_match(
 #[cfg(test)]
 mod tests {
     use super::FilterExpression;
-    use crate::mpd::Tag;
+    use crate::mpd::{filters::FilterMode, Tag};
 
     #[test]
     fn uri_match() {
-        let filter = FilterExpression::parse(["(file == 'A/B/C')".to_owned()]).unwrap();
+        let filter =
+            FilterExpression::parse(["(file == 'A/B/C')".to_owned()], FilterMode::Search).unwrap();
         assert_eq!(FilterExpression::UriMatch("A/B/C".to_owned()), filter);
     }
 
     #[test]
     fn tag_match_escaped_quotes() {
-        let filter = FilterExpression::parse([r#"(Artist == "foo\'bar\"")"#.to_owned()]).unwrap();
+        let filter = FilterExpression::parse(
+            [r#"(Artist == "foo\'bar\"")"#.to_owned()],
+            FilterMode::Search,
+        )
+        .unwrap();
         assert_eq!(
             FilterExpression::TagMatch(Tag::Artist, r#"foo'bar""#.to_owned()),
             filter
@@ -190,13 +208,15 @@ mod tests {
 
     #[test]
     fn base_dir() {
-        let filter = FilterExpression::parse(["(base 'A/B')".to_owned()]).unwrap();
+        let filter =
+            FilterExpression::parse(["(base 'A/B')".to_owned()], FilterMode::Search).unwrap();
         assert_eq!(FilterExpression::BaseDir("A/B".to_owned()), filter);
     }
 
     #[test]
     fn not_base_dir() {
-        let filter = FilterExpression::parse(["(!(base 'A/B'))".to_owned()]).unwrap();
+        let filter =
+            FilterExpression::parse(["(!(base 'A/B'))".to_owned()], FilterMode::Search).unwrap();
         assert_eq!(
             FilterExpression::Not(Box::new(FilterExpression::BaseDir("A/B".to_owned()))),
             filter
@@ -205,9 +225,11 @@ mod tests {
 
     #[test]
     fn album_and_artist() {
-        let filter =
-            FilterExpression::parse(["((artist == 'foo') AND (album == 'bar'))".to_owned()])
-                .unwrap();
+        let filter = FilterExpression::parse(
+            ["((artist == 'foo') AND (album == 'bar'))".to_owned()],
+            FilterMode::Search,
+        )
+        .unwrap();
         assert_eq!(
             FilterExpression::And(vec![
                 FilterExpression::TagMatch(Tag::Artist, "foo".to_owned()),
@@ -219,8 +241,11 @@ mod tests {
 
     #[test]
     fn album_and_artist_old_format() {
-        let filter =
-            FilterExpression::parse(["artist", "foo", "album", "bar"].map(str::to_owned)).unwrap();
+        let filter = FilterExpression::parse(
+            ["artist", "foo", "album", "bar"].map(str::to_owned),
+            FilterMode::Find,
+        )
+        .unwrap();
         assert_eq!(
             FilterExpression::And(vec![
                 FilterExpression::TagMatch(Tag::Artist, "foo".to_owned()),

@@ -48,6 +48,13 @@ impl Response {
                 self.add_repeated_field(tag, &values);
             }
         }
+
+        if let Some(ticks) = item.run_time_ticks {
+            // Convert ticks to seconds
+            let duration = ticks as f64 / 10000000.0;
+            self.add_field("duration", duration);
+            self.add_field("time", duration as i64);
+        }
     }
 
     pub fn extend(&mut self, other: &Self) {

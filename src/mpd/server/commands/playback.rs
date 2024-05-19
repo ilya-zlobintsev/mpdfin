@@ -1,6 +1,22 @@
 use super::CommandContext;
 use crate::mpd::{error::Error, Response, Result};
 
+pub fn play(ctx: CommandContext<'_>) -> Result<Response> {
+    match ctx.args.first() {
+        Some(arg) => {
+            let pos: usize = arg
+                .parse()
+                .map_err(|_| Error::InvalidArg("Invalid position provided".to_owned()))?;
+            ctx.player().play_by_pos(pos);
+        }
+        None => {
+            ctx.player().play();
+        }
+    }
+
+    Ok(Response::new())
+}
+
 pub fn playid(ctx: CommandContext<'_>) -> Result<Response> {
     let queue_id = ctx
         .args
@@ -9,17 +25,7 @@ pub fn playid(ctx: CommandContext<'_>) -> Result<Response> {
         .parse::<u64>()
         .map_err(|_| Error::InvalidArg("Invalid item id".to_owned()))?;
 
-    let state = ctx.player().state();
-    let item = state
-        .queue
-        .get(&queue_id)
-        .ok_or_else(|| Error::InvalidArg("Could not find id in queue".to_owned()))?;
-
-    let url = ctx
-        .server
-        .jellyfin_client
-        .get_audio_stream_url(&item.item_id);
-    ctx.server.player.play_url(&url);
+    ctx.server.player.play_by_id(queue_id);
 
     Ok(Response::new())
 }
@@ -45,11 +51,11 @@ pub fn pause(ctx: CommandContext<'_>) -> Result<Response> {
     Ok(Response::new())
 }
 
-pub fn getvol(ctx: CommandContext<'_>) -> Response {
+pub fn get_vol(ctx: CommandContext<'_>) -> Response {
     Response::new().field("volume", ctx.server.player.volume())
 }
 
-pub fn setvol(ctx: CommandContext<'_>) -> Result<Response> {
+pub fn set_vol(ctx: CommandContext<'_>) -> Result<Response> {
     let volume = ctx
         .args
         .first()
@@ -57,5 +63,18 @@ pub fn setvol(ctx: CommandContext<'_>) -> Result<Response> {
         .parse()
         .map_err(|_| Error::InvalidArg("Invalid volume argument".to_owned()))?;
     ctx.server.player.set_volume(volume);
+    Ok(Response::new())
+}
+
+pub fn volume(ctx: CommandContext<'_>) -> Result<Response> {
+    let change: i32 = ctx
+        .args
+        .first()
+        .ok_or_else(|| Error::InvalidArg("Missing volume argument".to_owned()))?
+        .parse()
+        .map_err(|_| Error::InvalidArg("Invalid volume argument".to_owned()))?;
+
+    let new_volume = ctx.server.player.volume() + change;
+    ctx.server.player.set_volume(new_volume);
     Ok(Response::new())
 }

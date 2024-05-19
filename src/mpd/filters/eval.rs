@@ -10,6 +10,17 @@ impl FilterExpression {
             FilterExpression::TagMismatch(tag, not_wanted_value) => {
                 !match_tag_value(item, *tag, not_wanted_value, case_sensitive)
             }
+            FilterExpression::TagContains(tag, value) => item
+                .get_tag_values(*tag)
+                .into_iter()
+                .flatten()
+                .any(|item_value| {
+                    if case_sensitive {
+                        item_value.contains(value)
+                    } else {
+                        item_value.to_lowercase().contains(&value.to_lowercase())
+                    }
+                }),
             FilterExpression::UriMatch(_) => todo!(),
             FilterExpression::BaseDir(_) => todo!(),
             FilterExpression::And(subexpr) => subexpr
@@ -59,6 +70,7 @@ mod tests {
             genres: vec![],
             index_number: None,
             premiere_date: None,
+            run_time_ticks: None,
         };
         let filter = FilterExpression::TagMatch(Tag::Artist, "foo".to_owned());
         assert!(filter.match_item(&item, true));
@@ -77,6 +89,7 @@ mod tests {
             genres: vec![],
             index_number: None,
             premiere_date: None,
+            run_time_ticks: None,
         };
         let filter = FilterExpression::TagMismatch(Tag::Artist, "bar".to_owned());
         assert!(filter.match_item(&item, true));

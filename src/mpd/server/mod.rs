@@ -51,9 +51,11 @@ impl Server {
 
                     debug!("Response: {result:?}");
                     match result {
-                        Ok(response) => {
+                        Ok(Some(response)) => {
                             response.write(&mut stream).await?;
                         }
+                        // Special case for `noidle` while not idling, ignore the command and not output anything
+                        Ok(None) => (),
                         Err(err) => {
                             stream
                                 .write_all(err.to_response(0, Some(command)).as_bytes())
@@ -76,7 +78,7 @@ impl Server {
     }
 }
 
-async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Response> {
+async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Option<Response>> {
     match command {
         "command_list_begin" => handle_command_list(ctx, false).await,
         "command_list_ok_begin" => handle_command_list(ctx, true).await,
@@ -84,7 +86,7 @@ async fn handle_request(command: &str, ctx: CommandContext<'_>) -> Result<Respon
     }
 }
 
-async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Response> {
+async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Option<Response>> {
     use commands::*;
     let response = match command {
         "ping" => Response::new(),
@@ -93,9 +95,10 @@ async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Respon
         "currentsong" => status::current_song(ctx)?,
         "idle" => status::idle(ctx).await?,
         // Ignore if not currently idling
-        "noidle" => Response::new(),
+        "noidle" => return Ok(None),
 
         "find" => database::find(ctx)?,
+        "search" => database::search(ctx)?,
         "lsinfo" => database::lsinfo(ctx),
         "list" => database::list(ctx)?,
 
@@ -105,10 +108,14 @@ async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Respon
         "plchanges" => queue::plchanges(ctx)?,
         "clear" => queue::clear(ctx),
 
+        "play" => playback::play(ctx)?,
         "playid" => playback::playid(ctx)?,
         "pause" => playback::pause(ctx)?,
-        "getvol" => playback::getvol(ctx),
-        "setvol" => playback::setvol(ctx)?,
+        "getvol" => playback::get_vol(ctx),
+        "setvol" => playback::set_vol(ctx)?,
+        "volume" => playback::volume(ctx)?,
+
+        "listplaylists" => playlists::list_playlists(ctx)?,
 
         "tagtypes" => connection::tag_types(ctx)?,
 
@@ -116,7 +123,7 @@ async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Respon
         "decoders" => Response::new(),
         other => return Err(Error::UnknownCommand(other.to_owned())),
     };
-    Ok(response)
+    Ok(Some(response))
 }
 
 /// Note: it is the caller's responsibility to clear the buffer
@@ -138,7 +145,7 @@ async fn read_request<'a, R: AsyncRead + AsyncWrite + Unpin>(
     }
 }
 
-async fn handle_command_list(ctx: CommandContext<'_>, print_ok: bool) -> Result<Response> {
+async fn handle_command_list(ctx: CommandContext<'_>, print_ok: bool) -> Result<Option<Response>> {
     let mut buf = String::new();
     let mut requests = Vec::new();
 
@@ -162,13 +169,14 @@ async fn handle_command_list(ctx: CommandContext<'_>, print_ok: bool) -> Result<
             stream: ctx.stream,
             subsystem_listener: ctx.subsystem_listener,
         };
-        let command_response = handle_command(&command, ctx).await?;
-        response.extend(&command_response);
+        if let Some(command_response) = handle_command(&command, ctx).await? {
+            response.extend(&command_response);
+        }
 
         if print_ok {
             response.add_list_ok();
         }
     }
 
-    Ok(response)
+    Ok(Some(response))
 }

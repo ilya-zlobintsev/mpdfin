@@ -1,6 +1,7 @@
 pub mod connection;
 pub mod database;
 pub mod playback;
+pub mod playlists;
 pub mod queue;
 pub mod status;
 

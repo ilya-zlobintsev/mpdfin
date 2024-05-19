@@ -23,8 +23,9 @@ pub struct BaseItemDto {
     pub album_artist: Option<String>,
     #[serde(default)]
     pub genres: Vec<String>,
-    pub index_number: Option<u32>,
+    pub index_number: Option<i32>,
     pub premiere_date: Option<chrono::DateTime<Utc>>,
+    pub run_time_ticks: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

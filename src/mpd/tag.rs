@@ -66,6 +66,9 @@ impl BaseItemDto {
                     .map(|genre| genre.as_str().into())
                     .collect(),
             ),
+            Tag::Track => self
+                .index_number
+                .map(|value| vec![value.to_string().into()]),
             _ => None,
         }
     }

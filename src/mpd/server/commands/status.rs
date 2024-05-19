@@ -21,6 +21,13 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
         response.add_field("songid", queue_id);
     }
 
+    if let (Some(duration), Some(position)) = (player.media_length(), player.media_position()) {
+        let elapsed = duration as f32 / 1000.0 * position;
+        response.add_field("elapsed", elapsed);
+        response.add_field("time", format!("{}:{}", elapsed as i32, duration / 1000));
+        response.add_field("duration", duration / 1000);
+    }
+
     let playback_state = match player.playback_state() {
         vlc::State::Playing => "play",
         vlc::State::Paused => "pause",

@@ -15,8 +15,8 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
         .field("single", 0)
         .field("consume", 0);
 
-    if let Some(current_pos) = player_state.current_pos {
-        let (queue_id, _item) = &player_state.queue.get_index(current_pos).unwrap();
+    if let Some(current_pos) = player_state.current_pos() {
+        let (queue_id, _item) = &player_state.queue().get_index(current_pos).unwrap();
         response.add_field("song", current_pos);
         response.add_field("songid", queue_id);
     }
@@ -36,8 +36,8 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
 
     response
         .field("state", playback_state)
-        .field("playlist", player_state.playlist_version)
-        .field("playlistlength", player_state.queue.len())
+        .field("playlist", player_state.playlist_version())
+        .field("playlistlength", player_state.queue().len())
 }
 
 pub fn current_song(_ctx: CommandContext<'_>) -> Result<Response> {

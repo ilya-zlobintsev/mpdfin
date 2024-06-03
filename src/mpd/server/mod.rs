@@ -114,6 +114,8 @@ async fn handle_command(command: &str, ctx: CommandContext<'_>) -> Result<Option
         "getvol" => playback::get_vol(ctx),
         "setvol" => playback::set_vol(ctx)?,
         "volume" => playback::volume(ctx)?,
+        "previous" => playback::previous(ctx)?,
+        "next" => playback::next(ctx)?,
 
         "listplaylists" => playlists::list_playlists(ctx)?,
 

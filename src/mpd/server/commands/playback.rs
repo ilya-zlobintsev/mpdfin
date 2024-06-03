@@ -78,3 +78,13 @@ pub fn volume(ctx: CommandContext<'_>) -> Result<Response> {
     ctx.server.player.set_volume(new_volume);
     Ok(Response::new())
 }
+
+pub fn previous(ctx: CommandContext<'_>) -> Result<Response> {
+    ctx.player().previous();
+    Ok(Response::new())
+}
+
+pub fn next(ctx: CommandContext<'_>) -> Result<Response> {
+    ctx.player().next();
+    Ok(Response::new())
+}

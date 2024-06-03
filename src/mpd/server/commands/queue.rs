@@ -10,7 +10,7 @@ pub fn plchanges(ctx: CommandContext<'_>) -> Result<Response> {
         .parse::<u64>()
         .map_err(|_| Error::InvalidArg("Invalid version provided".to_owned()))?;
 
-    if version < ctx.player().state().playlist_version {
+    if version < ctx.player().state().playlist_version() {
         playlist_info(ctx)
     } else {
         Ok(Response::new())
@@ -46,13 +46,12 @@ pub fn add_id(ctx: CommandContext<'_>) -> Result<Response> {
 
 pub fn playlist_info(ctx: CommandContext<'_>) -> Result<Response> {
     let db = ctx.server.db.borrow();
-    let queue = &ctx.server.player.state().queue;
+    let state = ctx.server.player.state();
+    let queue = &state.queue();
 
     Ok(queue.iter().enumerate().fold(
         Response::new(),
         |response, (pos, (queue_id, queue_item))| {
-            println!("Item id: '{}'", queue_item.item_id);
-            println!("db size: {}", db.items.len());
             let item = db
                 .items
                 .get(&queue_item.item_id)

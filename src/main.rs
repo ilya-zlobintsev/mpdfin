@@ -1,6 +1,7 @@
 use anyhow::Context;
 use async_executor::LocalExecutor;
 use async_net::TcpListener;
+use async_signal::{Signal, Signals};
 use futures_lite::{future, StreamExt};
 use jellyfin::{user::AuthenticateUserByName, JellyfinClient};
 use log::{debug, error, info};
@@ -9,7 +10,7 @@ use mpdfin::{
     database::Database,
     jellyfin::{self, ClientSettings},
     mpd::{Server, Subsystem, SubsystemNotifier},
-    player::Player,
+    player::{self, Player},
 };
 use souvlaki::MediaPosition;
 use std::{cell::RefCell, rc::Rc, str::FromStr, time::Duration};
@@ -66,16 +67,20 @@ fn main() -> anyhow::Result<()> {
 
         let subsystem_notifier = SubsystemNotifier::new();
 
-        let player = Player::new(
+        let state = player::State::load().unwrap_or_default();
+
+        let player = Rc::new(Player::new(
             subsystem_notifier.clone(),
             db.clone(),
             jellyfin_client.clone(),
-        );
+            state,
+            // ex,
+        ));
 
         let server = Server {
             db,
             jellyfin_client,
-            player: Rc::new(player),
+            player: player.clone(),
             subsystem_notifier,
         };
 
@@ -86,20 +91,33 @@ fn main() -> anyhow::Result<()> {
             .context("Could not start TCP listener")?;
         info!("Listening on {}", config.general.listen_host);
 
-        while let Some(stream) = tcp_listener.incoming().next().await {
-            match stream {
-                Ok(stream) => {
-                    let server = server.clone();
-                    ex.spawn(async move {
-                        if let Err(err) = server.handle_stream(stream).await {
-                            error!("Error processing stream: {err:#}");
+        let _main_task = ex.spawn(async move {
+            let ex = LocalExecutor::new();
+            ex.run(async {
+                while let Some(stream) = tcp_listener.incoming().next().await {
+                    match stream {
+                        Ok(stream) => {
+                            let server = server.clone();
+                            ex.spawn(async move {
+                                if let Err(err) = server.handle_stream(stream).await {
+                                    error!("Error processing stream: {err:#}");
+                                }
+                            })
+                            .detach();
                         }
-                    })
-                    .detach();
+                        Err(err) => error!("Could not accept TCP connection: {err}"),
+                    }
                 }
-                Err(err) => error!("Could not accept TCP connection: {err}"),
-            }
-        }
+            })
+            .await
+        });
+
+        let mut exit_signals = Signals::new([Signal::Int, Signal::Term, Signal::Quit])?;
+        exit_signals.next().await;
+
+        info!("Got signal, exiting");
+        player.state().save();
+        info!("Saved state");
 
         Ok(())
     }))

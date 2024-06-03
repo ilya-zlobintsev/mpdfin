@@ -1,16 +1,55 @@
 use indexmap::IndexMap;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
-use std::rc::Rc;
+use std::{fs, path::PathBuf, rc::Rc};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
-    pub queue: IndexMap<u64, QueueItem>,
+    queue: IndexMap<u64, QueueItem>,
     next_id: u64,
-    pub current_pos: Option<usize>,
-    pub playlist_version: u64,
+    current_pos: Option<usize>,
+    playlist_version: u64,
+    // vlc::State stored as u32 for serialization
+    pub playback_state: Option<u32>,
 }
 
 impl State {
+    pub fn queue(&self) -> &IndexMap<u64, QueueItem> {
+        &self.queue
+    }
+
+    pub fn current_item_id(&self) -> Option<&str> {
+        self.current_pos
+            .map(|pos| self.queue.get_index(pos).unwrap().1.item_id.as_ref())
+    }
+
+    pub fn current_pos(&self) -> Option<usize> {
+        self.current_pos
+    }
+
+    pub fn playlist_version(&self) -> u64 {
+        self.playlist_version
+    }
+
+    /// Returns the URL of the item set as current
+    pub fn set_current(&mut self, pos: usize) -> Option<&str> {
+        if let Some((_, item)) = self.queue.get_index(pos) {
+            self.current_pos = Some(pos);
+            Some(&item.item_id)
+        } else {
+            None
+        }
+    }
+
+    pub fn set_current_by_id(&mut self, id: u64) -> Option<&str> {
+        if let Some((pos, _, item)) = self.queue.get_full(&id) {
+            self.current_pos = Some(pos);
+            Some(&item.item_id)
+        } else {
+            None
+        }
+    }
+
     pub fn add_item(&mut self, item_id: Rc<str>) -> u64 {
         self.playlist_version += 1;
 
@@ -20,13 +59,74 @@ impl State {
         id
     }
 
-    pub fn current_item_id(&self) -> Option<&str> {
-        self.current_pos
-            .map(|pos| self.queue.get_index(pos).unwrap().1.item_id.as_ref())
+    pub fn move_next(&mut self) -> Option<&str> {
+        self.current_pos.and_then(|current| {
+            let next = current + 1;
+            self.queue.get_index(next).map(|(_, item)| {
+                self.current_pos = Some(next);
+                item.item_id.as_ref()
+            })
+        })
+    }
+
+    pub fn move_previous(&mut self) -> Option<&str> {
+        self.current_pos.and_then(|current| {
+            let prev = current - 1;
+            self.queue.get_index(prev).map(|(_, item)| {
+                self.current_pos = Some(prev);
+                item.item_id.as_ref()
+            })
+        })
+    }
+
+    pub fn clear(&mut self) {
+        self.current_pos = None;
+        self.queue.clear();
+        self.playlist_version += 1;
+    }
+
+    pub fn save(&self) {
+        let path = state_path();
+        fs::create_dir_all(path.parent().unwrap()).expect("Could not create state dir");
+        let contents = serde_json::to_string(&self).unwrap();
+        if let Err(err) = fs::write(path, contents) {
+            error!("Could not save state: {err}");
+        }
+    }
+
+    pub fn load() -> Option<Self> {
+        let path = state_path();
+        if path.exists() {
+            match fs::read_to_string(path) {
+                Ok(contents) => match serde_json::from_str::<Self>(&contents) {
+                    Ok(state) => {
+                        info!("Loaded state with {} songs in queue", state.queue.len());
+                        Some(state)
+                    }
+                    Err(err) => {
+                        error!("Could not deserialize state: {err}");
+                        None
+                    }
+                },
+                Err(err) => {
+                    error!("Could not read state file: {err}");
+                    None
+                }
+            }
+        } else {
+            None
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueueItem {
     pub item_id: Rc<str>,
+}
+
+fn state_path() -> PathBuf {
+    dirs::data_dir()
+        .expect("Config dir should be avilable")
+        .join("mpdfin")
+        .join("state.json")
 }

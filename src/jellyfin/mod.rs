@@ -11,14 +11,14 @@ use self::{
     user::{AuthenticateUserByName, AuthenticationResult},
 };
 use serde::{de::DeserializeOwned, Serialize};
-use std::{fmt, rc::Rc, time::Duration};
+use std::{fmt, rc::Rc, sync::Arc, time::Duration};
 
 type Result<T> = std::result::Result<T, JellyfinError>;
 
 #[derive(Clone)]
 pub struct JellyfinClient {
     agent: ureq::Agent,
-    base_url: Rc<str>,
+    base_url: Arc<str>,
     pub settings: Rc<ClientSettings>,
 }
 

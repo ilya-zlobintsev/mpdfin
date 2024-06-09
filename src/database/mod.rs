@@ -17,13 +17,13 @@ use std::{
     fs::{self, File},
     io::BufReader,
     path::PathBuf,
-    rc::Rc,
+    sync::Arc,
 };
 
 #[derive(Serialize, Deserialize)]
 pub struct Database {
-    pub items: HashMap<Rc<str>, Rc<BaseItemDto>>,
-    pub token: Rc<str>,
+    pub items: HashMap<Arc<str>, Arc<BaseItemDto>>,
+    pub token: Arc<str>,
     #[serde(skip)]
     pub tree_root: TreeNode,
 }
@@ -65,7 +65,7 @@ impl Database {
                 response
                     .items
                     .into_iter()
-                    .map(|item| (item.id.clone(), Rc::new(item))),
+                    .map(|item| (item.id.clone(), Arc::new(item))),
             );
         }
         items.shrink_to_fit();

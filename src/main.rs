@@ -3,6 +3,7 @@ use async_executor::LocalExecutor;
 use async_net::TcpListener;
 use async_signal::{Signal, Signals};
 use futures_lite::{future, StreamExt};
+use gstreamer_player::PlayerState;
 use jellyfin::{user::AuthenticateUserByName, JellyfinClient};
 use log::{debug, error, info};
 use mpdfin::{
@@ -139,13 +140,12 @@ fn start_media_control(ex: &LocalExecutor, server: Server) {
                 souvlaki::MediaControlEvent::Play => player.play(),
                 souvlaki::MediaControlEvent::Pause => player.pause(),
                 souvlaki::MediaControlEvent::Toggle => player.toggle(),
-                souvlaki::MediaControlEvent::Next => todo!(),
-                souvlaki::MediaControlEvent::Previous => todo!(),
+                souvlaki::MediaControlEvent::Next => player.next(),
+                souvlaki::MediaControlEvent::Previous => player.previous(),
                 souvlaki::MediaControlEvent::Stop => player.stop(),
-                souvlaki::MediaControlEvent::Seek(_) => todo!(),
-                souvlaki::MediaControlEvent::SeekBy(_, _) => todo!(),
-                souvlaki::MediaControlEvent::SetPosition(_) => todo!(),
-                souvlaki::MediaControlEvent::SetVolume(_) => todo!(),
+                souvlaki::MediaControlEvent::SetVolume(value) => {
+                    player.set_volume((value * 100.0) as i32);
+                }
                 souvlaki::MediaControlEvent::OpenUri(_) => todo!(),
                 _ => (),
             }
@@ -194,15 +194,10 @@ fn start_media_control(ex: &LocalExecutor, server: Server) {
                     let progress = server
                         .player
                         .media_position()
-                        .and_then(|position| Some((metadata.duration?, position)))
-                        .map(|(duration, position)| {
-                            MediaPosition(Duration::from_millis(
-                                (duration.as_millis() as f32 * position) as u64,
-                            ))
-                        });
+                        .map(|position| MediaPosition(Duration::from_millis(position)));
                     let playback = match server.player.playback_state() {
-                        vlc::State::Playing => souvlaki::MediaPlayback::Playing { progress },
-                        vlc::State::Paused => souvlaki::MediaPlayback::Paused { progress },
+                        PlayerState::Playing => souvlaki::MediaPlayback::Playing { progress },
+                        PlayerState::Paused => souvlaki::MediaPlayback::Paused { progress },
                         _ => souvlaki::MediaPlayback::Stopped,
                     };
                     debug!("Updating system media plabyack status to {playback:?}");

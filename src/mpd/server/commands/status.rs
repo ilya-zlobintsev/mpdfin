@@ -1,6 +1,7 @@
 use super::CommandContext;
 use crate::mpd::{error::Error, server::read_request, Request, Response, Result, Subsystem};
 use futures_lite::future;
+use gstreamer_player::PlayerState;
 use std::borrow::Cow;
 use strum::VariantArray;
 
@@ -21,16 +22,15 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
         response.add_field("songid", queue_id);
     }
 
-    if let (Some(duration), Some(position)) = (player.media_length(), player.media_position()) {
-        let elapsed = duration as f32 / 1000.0 * position;
-        response.add_field("elapsed", elapsed);
-        response.add_field("time", format!("{}:{}", elapsed as i32, duration / 1000));
+    if let (Some(duration), Some(elapsed)) = (player.media_length(), player.media_position()) {
+        response.add_field("elapsed", elapsed / 1000);
+        response.add_field("time", format!("{}:{}", elapsed / 1000, duration / 1000));
         response.add_field("duration", duration / 1000);
     }
 
-    let playback_state = match player.playback_state() {
-        vlc::State::Playing => "play",
-        vlc::State::Paused => "pause",
+    let playback_state = match player_state.playback_state() {
+        Some(PlayerState::Playing) | Some(PlayerState::Buffering) => "play",
+        Some(PlayerState::Paused) => "pause",
         _ => "stop",
     };
 

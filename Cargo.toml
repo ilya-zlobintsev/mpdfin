@@ -12,7 +12,8 @@ async-signal = "0.2.6"
 blocking = "1.5.1"
 futures-lite = "2.3.0"
 
-vlc-rs = { git = "https://code.videolan.org/videolan/vlc-rs" }
+gstreamer-player = "0.22.0"
+gstreamer = "0.22.5"
 souvlaki = "0.7.3"
 
 toml = "0.8.8"

@@ -1,11 +1,11 @@
 use crate::jellyfin::base::BaseItemDto;
-use std::{collections::BTreeMap, rc::Rc};
+use std::{collections::BTreeMap, sync::Arc};
 
 #[derive(Debug)]
 pub enum TreeNode {
     Directory(BTreeMap<String, TreeNode>),
     // Item id
-    File(Rc<str>),
+    File(Arc<str>),
 }
 
 impl Default for TreeNode {
@@ -14,7 +14,7 @@ impl Default for TreeNode {
     }
 }
 
-pub fn build_tree<'a>(items: impl Iterator<Item = &'a Rc<BaseItemDto>>) -> TreeNode {
+pub fn build_tree<'a>(items: impl Iterator<Item = &'a Arc<BaseItemDto>>) -> TreeNode {
     let mut root_node = BTreeMap::new();
 
     for item in items {

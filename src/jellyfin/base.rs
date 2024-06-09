@@ -1,6 +1,6 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -13,13 +13,13 @@ pub struct ItemsResponse {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct BaseItemDto {
-    pub id: Rc<str>,
-    pub name: Option<Rc<str>>,
+    pub id: Arc<str>,
+    pub name: Option<Arc<str>>,
     pub r#type: BaseItemKind,
     pub collection_type: Option<String>,
-    pub album: Option<Rc<str>>,
+    pub album: Option<Arc<str>>,
     #[serde(default)]
-    pub artists: Vec<Rc<str>>,
+    pub artists: Vec<Arc<str>>,
     pub album_artist: Option<String>,
     #[serde(default)]
     pub genres: Vec<String>,

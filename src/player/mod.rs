@@ -7,19 +7,21 @@ use crate::{
     jellyfin::JellyfinClient,
     mpd::{subsystem::SubsystemNotifier, Subsystem},
 };
-use log::debug;
+use glib::clone;
+use gstreamer::glib;
+use gstreamer_player::{PlayerGMainContextSignalDispatcher, PlayerState, PlayerVideoRenderer};
+use log::{debug, error, trace};
 use std::{
-    cell::{Ref, RefCell},
+    cell::RefCell,
     rc::Rc,
+    sync::{Arc, RwLock, RwLockReadGuard},
 };
-use vlc::{EventType, Instance, Media, MediaPlayer, MediaPlayerAudioEx};
 
 pub struct Player {
-    instance: Instance,
-    media_player: Rc<MediaPlayer>,
+    media_player: gstreamer_player::Player,
 
     subsystem_notifier: SubsystemNotifier,
-    state: Rc<RefCell<State>>,
+    state: Arc<RwLock<State>>,
 
     database: Rc<RefCell<Database>>,
     jellyfin_client: JellyfinClient,
@@ -31,64 +33,84 @@ impl Player {
         database: Rc<RefCell<Database>>,
         jellyfin_client: JellyfinClient,
         state: State,
-        // ex: &LocalExecutor,
     ) -> Self {
-        let state = Rc::new(RefCell::new(state));
+        gstreamer::init().expect("Failed to initialize gstreamer");
 
-        let instance = Instance::new().expect("Could not initialize instance");
+        let main_loop = glib::MainLoop::new(None, false);
 
-        let user_agent = env!("CARGO_PKG_NAME");
-        instance.set_user_agent(user_agent, user_agent);
+        let state = Arc::new(RwLock::new(state));
 
-        let media_player = MediaPlayer::new(&instance).expect("Could not initialize media player");
+        let dispatcher = PlayerGMainContextSignalDispatcher::new(None);
+        let media_player =
+            gstreamer_player::Player::new(None::<PlayerVideoRenderer>, Some(dispatcher));
 
-        let event_manager = media_player.event_manager();
+        let mut config = media_player.config().clone();
+        config.set_name("Mpdfin");
+        config.set_user_agent("Mpdfin");
+        media_player.set_config(config).unwrap();
 
-        for event_type in [
-            EventType::MediaPlayerPlaying,
-            EventType::MediaPlayerStopped,
-            EventType::MediaPlayerPaused,
-            EventType::MediaPlayerEndReached,
-            EventType::MediaStateChanged,
-        ] {
-            let subsystem_notifier = subsystem_notifier.clone();
+        media_player.connect_state_changed(
+            clone!(@strong subsystem_notifier, @strong state => move |_player, new_state| {
+                state.write().unwrap().set_playback_state(new_state);
 
-            event_manager
-                .attach(event_type, move |_, _| {
-                    subsystem_notifier.notify(Subsystem::Player);
-                    subsystem_notifier.notify(Subsystem::Mixer);
-                })
-                .unwrap();
-        }
+                subsystem_notifier.notify(Subsystem::Player);
+                subsystem_notifier.notify(Subsystem::Mixer);
+            }),
+        );
 
-        Self {
-            instance,
-            media_player: Rc::new(media_player),
+        media_player.connect_volume_changed(clone!(@strong subsystem_notifier => move |_player| {
+            subsystem_notifier.notify(Subsystem::Player);
+            subsystem_notifier.notify(Subsystem::Mixer);
+        }));
+
+        media_player.connect_error(|_player, err| {
+            error!("Player error: {err}");
+        });
+
+        std::thread::spawn(move || {
+            main_loop.run();
+        });
+
+        let player = Self {
+            media_player,
             subsystem_notifier,
             database,
             state,
             jellyfin_client,
+        };
+
+        if let Some(item_id) = player.state().current_item_id() {
+            let url = &player.jellyfin_client.get_audio_stream_url(item_id);
+            player.media_player.set_uri(Some(url));
         }
+
+        if let Some(player_state) = player.state().playback_state() {
+            match player_state {
+                PlayerState::Buffering | PlayerState::Playing => player.play(),
+                PlayerState::Paused => player.pause(),
+                _ => (),
+            }
+        }
+
+        player
     }
 
     pub fn play_by_id(&self, queue_id: u64) {
-        self.state.borrow_mut().set_current_by_id(queue_id);
+        self.state.write().unwrap().set_current_by_id(queue_id);
         self.play_current();
     }
 
     pub fn play_by_pos(&self, pos: usize) {
-        self.state.borrow_mut().set_current(pos);
+        self.state.write().unwrap().set_current(pos);
         self.play_current();
     }
 
     fn play_current(&self) {
-        if let Some(item_id) = self.state.borrow().current_item_id() {
+        if let Some(item_id) = self.state.read().unwrap().current_item_id() {
             let url = &self.jellyfin_client.get_audio_stream_url(item_id);
-            debug!("creating media at new url");
-            let media = Media::new_location(&self.instance, url).expect("Invalid URL");
-            self.media_player.set_media(&media);
+            self.media_player.set_uri(Some(url));
             debug!("starting playback");
-            self.media_player.play().unwrap();
+            self.media_player.play();
             debug!("started playback");
         } else {
             self.media_player.stop();
@@ -98,11 +120,11 @@ impl Player {
     }
 
     pub fn is_playing(&self) -> bool {
-        self.media_player.is_playing()
+        self.state.read().unwrap().playback_state() == Some(PlayerState::Playing)
     }
 
     pub fn play(&self) {
-        self.media_player.play().unwrap();
+        self.media_player.play();
     }
 
     pub fn pause(&self) {
@@ -110,20 +132,20 @@ impl Player {
     }
 
     pub fn next(&self) {
-        self.state.borrow_mut().move_next();
+        self.state.write().unwrap().move_next();
         self.play_current();
     }
 
     pub fn previous(&self) {
-        self.state.borrow_mut().move_previous();
+        self.state.write().unwrap().move_previous();
         self.play_current();
     }
 
     pub fn toggle(&self) {
-        if self.media_player.is_playing() {
+        if self.is_playing() {
             self.media_player.pause();
         } else {
-            let _ = self.media_player.play();
+            self.media_player.play();
         }
         self.subsystem_notifier.notify(Subsystem::Player);
     }
@@ -133,65 +155,58 @@ impl Player {
         self.subsystem_notifier.notify(Subsystem::Player);
     }
 
+    /// Takes value 0-100
     pub fn set_volume(&self, volume: i32) {
-        self.media_player.set_volume(volume).unwrap();
+        let value = volume as f64 / 100.0;
+        self.media_player.set_volume(value);
         self.subsystem_notifier.notify(Subsystem::Mixer);
     }
 
     pub fn volume(&self) -> i32 {
-        self.media_player.get_volume()
+        (self.media_player.volume() * 100.0).round() as i32
     }
 
-    pub fn state(&self) -> Ref<'_, State> {
-        self.state.borrow()
+    pub fn state(&self) -> RwLockReadGuard<'_, State> {
+        trace!("Acquiring state read lock");
+        self.state.try_read().unwrap()
     }
 
-    pub fn add_item(&self, item_id: Rc<str>) -> Option<u64> {
+    pub fn add_item(&self, item_id: Arc<str>) -> Option<u64> {
         if !self.database.borrow().items.contains_key(&item_id) {
             return None;
         }
 
-        let id = self.state.borrow_mut().add_item(item_id);
+        let id = self.state.write().unwrap().add_item(item_id);
         self.subsystem_notifier.notify(Subsystem::Playlist);
         Some(id)
     }
 
     pub fn clear(&self) {
-        let mut state = self.state.borrow_mut();
+        let mut state = self.state.write().unwrap();
         state.clear();
         self.subsystem_notifier.notify(Subsystem::Playlist);
 
         self.stop();
     }
 
-    pub fn playback_state(&self) -> vlc::State {
+    pub fn playback_state(&self) -> PlayerState {
         self.state()
-            .playback_state
-            .map(vlc::State::from)
-            .unwrap_or(vlc::State::Stopped)
+            .playback_state()
+            .unwrap_or(PlayerState::Stopped)
     }
 
     /// In ms
-    pub fn media_length(&self) -> Option<i64> {
+    pub fn media_length(&self) -> Option<u64> {
         self.media_player
-            .get_media()
-            .and_then(|media| media.duration())
+            .media_info()
+            .and_then(|info| info.duration())
+            .map(|duration| duration.mseconds())
     }
 
-    /// Returns value between 0 and 1
-    pub fn media_position(&self) -> Option<f32> {
-        self.media_player.get_position()
+    /// In ms
+    pub fn media_position(&self) -> Option<u64> {
+        self.media_player
+            .position()
+            .map(|position| position.mseconds())
     }
-
-    fn update_playback_state(&self) {
-        self.state.borrow_mut().playback_state = Some(self.media_player.state() as u32);
-    }
-
-    // fn send_event(&mut self, event: PlayerEvent) {
-    //     let _ = self.event_sender.send(event);
-    // }
-
-    // pub fn subscribe(&self) -> broadcast::Receiver<PlayerEvent> {
-    //     self.event_sender.subscribe()
-    // }
 }

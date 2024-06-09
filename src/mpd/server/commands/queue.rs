@@ -1,6 +1,6 @@
 use super::CommandContext;
 use crate::mpd::{error::Error, Response, Result};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub fn plchanges(ctx: CommandContext<'_>) -> Result<Response> {
     let version = ctx
@@ -30,7 +30,7 @@ pub fn add(ctx: CommandContext<'_>) -> Result<Response> {
 pub fn add_id(ctx: CommandContext<'_>) -> Result<Response> {
     let mut args = ctx.args.into_iter();
 
-    let item_id: Rc<str> = args
+    let item_id: Arc<str> = args
         .next()
         .ok_or_else(|| Error::InvalidArg("Missing song uri".to_owned()))?
         .into();

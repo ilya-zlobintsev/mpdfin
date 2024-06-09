@@ -1,7 +1,8 @@
+use gstreamer_player::PlayerState;
 use indexmap::IndexMap;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf, rc::Rc};
+use std::{fs, path::PathBuf, sync::Arc};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
@@ -9,8 +10,7 @@ pub struct State {
     next_id: u64,
     current_pos: Option<usize>,
     playlist_version: u64,
-    // vlc::State stored as u32 for serialization
-    pub playback_state: Option<u32>,
+    playback_state: Option<u8>,
 }
 
 impl State {
@@ -50,7 +50,7 @@ impl State {
         }
     }
 
-    pub fn add_item(&mut self, item_id: Rc<str>) -> u64 {
+    pub fn add_item(&mut self, item_id: Arc<str>) -> u64 {
         self.playlist_version += 1;
 
         let id = self.next_id;
@@ -70,13 +70,15 @@ impl State {
     }
 
     pub fn move_previous(&mut self) -> Option<&str> {
-        self.current_pos.and_then(|current| {
-            let prev = current - 1;
-            self.queue.get_index(prev).map(|(_, item)| {
-                self.current_pos = Some(prev);
-                item.item_id.as_ref()
+        self.current_pos
+            .filter(|current| *current != 0)
+            .and_then(|current| {
+                let prev = current - 1;
+                self.queue.get_index(prev).map(|(_, item)| {
+                    self.current_pos = Some(prev);
+                    item.item_id.as_ref()
+                })
             })
-        })
     }
 
     pub fn clear(&mut self) {
@@ -117,11 +119,19 @@ impl State {
             None
         }
     }
+
+    pub fn playback_state(&self) -> Option<PlayerState> {
+        self.playback_state.and_then(deserialize_player_state)
+    }
+
+    pub fn set_playback_state(&mut self, value: PlayerState) {
+        self.playback_state = Some(serialize_player_state(value));
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueueItem {
-    pub item_id: Rc<str>,
+    pub item_id: Arc<str>,
 }
 
 fn state_path() -> PathBuf {
@@ -129,4 +139,24 @@ fn state_path() -> PathBuf {
         .expect("Config dir should be avilable")
         .join("mpdfin")
         .join("state.json")
+}
+
+fn serialize_player_state(state: PlayerState) -> u8 {
+    match state {
+        PlayerState::Stopped => 0,
+        PlayerState::Buffering => 1,
+        PlayerState::Paused => 2,
+        PlayerState::Playing => 3,
+        _ => 4,
+    }
+}
+
+fn deserialize_player_state(value: u8) -> Option<PlayerState> {
+    match value {
+        0 => Some(PlayerState::Stopped),
+        1 => Some(PlayerState::Buffering),
+        2 => Some(PlayerState::Paused),
+        3 => Some(PlayerState::Playing),
+        _ => None,
+    }
 }

@@ -78,7 +78,7 @@ pub fn playlist_info(ctx: CommandContext<'_>) -> Result<Response> {
         |response, (pos, (queue_id, queue_item))| {
             let item = db
                 .items
-                .get(&queue_item.item_id)
+                .get(queue_item)
                 .expect("ID must be present in database");
             response.item(item).field("Pos", pos).field("Id", queue_id)
         },

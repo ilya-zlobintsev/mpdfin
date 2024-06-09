@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             db,
             jellyfin_client,
             player: player.clone(),
-            subsystem_notifier,
+            subsystem_notifier: subsystem_notifier.clone(),
         };
 
         start_media_control(&ex, server.clone());
@@ -91,6 +91,23 @@ fn main() -> anyhow::Result<()> {
             .await
             .context("Could not start TCP listener")?;
         info!("Listening on {}", config.general.listen_host);
+
+        let task_player = player.clone();
+        ex.spawn(async move {
+            let mut listener = subsystem_notifier.listener();
+            loop {
+                listener
+                    .listen(&[
+                        Subsystem::Playlist,
+                        Subsystem::Player,
+                        Subsystem::Mixer,
+                        Subsystem::Options,
+                    ])
+                    .await;
+                task_player.save_state();
+            }
+        })
+        .detach();
 
         let _main_task = ex.spawn(async move {
             let ex = LocalExecutor::new();
@@ -117,8 +134,7 @@ fn main() -> anyhow::Result<()> {
         exit_signals.next().await;
 
         info!("Got signal, exiting");
-        player.state().save();
-        info!("Saved state");
+        player.save_state();
 
         Ok(())
     }))

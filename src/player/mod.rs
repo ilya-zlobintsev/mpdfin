@@ -8,7 +8,7 @@ use crate::{
     mpd::{subsystem::SubsystemNotifier, Subsystem},
 };
 use glib::clone;
-use gstreamer::glib;
+use gstreamer::{glib, ClockTime};
 use gstreamer_player::{PlayerGMainContextSignalDispatcher, PlayerState, PlayerVideoRenderer};
 use log::{debug, error, trace};
 use std::{
@@ -84,12 +84,21 @@ impl Player {
             player.media_player.set_uri(Some(url));
         }
 
+        if let Some(volume) = player.state().volume {
+            player.media_player.set_volume(volume);
+        }
+
         if let Some(player_state) = player.state().playback_state() {
             match player_state {
                 PlayerState::Buffering | PlayerState::Playing => player.play(),
                 PlayerState::Paused => player.pause(),
                 _ => (),
             }
+        }
+
+        let position = player.state().media_position;
+        if position != 0 {
+            player.media_player.seek(ClockTime::from_mseconds(position));
         }
 
         player
@@ -208,5 +217,14 @@ impl Player {
         self.media_player
             .position()
             .map(|position| position.mseconds())
+    }
+
+    pub fn save_state(&self) {
+        let mut state = self.state.write().unwrap();
+        state.media_position = self.media_position().unwrap_or(0);
+        state.volume = Some(self.media_player.volume());
+        state.save();
+
+        debug!("Saved state");
     }
 }

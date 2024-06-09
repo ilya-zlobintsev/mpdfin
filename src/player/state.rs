@@ -6,21 +6,23 @@ use std::{fs, path::PathBuf, sync::Arc};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct State {
-    queue: IndexMap<u64, QueueItem>,
+    queue: IndexMap<u64, Arc<str>>,
     next_id: u64,
     current_pos: Option<usize>,
     playlist_version: u64,
     playback_state: Option<u8>,
+    pub(super) media_position: u64,
+    pub(super) volume: Option<f64>,
 }
 
 impl State {
-    pub fn queue(&self) -> &IndexMap<u64, QueueItem> {
+    pub fn queue(&self) -> &IndexMap<u64, Arc<str>> {
         &self.queue
     }
 
     pub fn current_item_id(&self) -> Option<&str> {
         self.current_pos
-            .map(|pos| self.queue.get_index(pos).unwrap().1.item_id.as_ref())
+            .map(|pos| self.queue.get_index(pos).unwrap().1.as_ref())
     }
 
     pub fn current_pos(&self) -> Option<usize> {
@@ -35,7 +37,7 @@ impl State {
     pub fn set_current(&mut self, pos: usize) -> Option<&str> {
         if let Some((_, item)) = self.queue.get_index(pos) {
             self.current_pos = Some(pos);
-            Some(&item.item_id)
+            Some(item)
         } else {
             None
         }
@@ -44,7 +46,7 @@ impl State {
     pub fn set_current_by_id(&mut self, id: u64) -> Option<&str> {
         if let Some((pos, _, item)) = self.queue.get_full(&id) {
             self.current_pos = Some(pos);
-            Some(&item.item_id)
+            Some(item)
         } else {
             None
         }
@@ -54,7 +56,7 @@ impl State {
         self.playlist_version += 1;
 
         let id = self.next_id;
-        self.queue.insert(id, QueueItem { item_id });
+        self.queue.insert(id, item_id);
         self.next_id += 1;
         id
     }
@@ -64,7 +66,7 @@ impl State {
             let next = current + 1;
             self.queue.get_index(next).map(|(_, item)| {
                 self.current_pos = Some(next);
-                item.item_id.as_ref()
+                item.as_ref()
             })
         })
     }
@@ -76,7 +78,7 @@ impl State {
                 let prev = current - 1;
                 self.queue.get_index(prev).map(|(_, item)| {
                     self.current_pos = Some(prev);
-                    item.item_id.as_ref()
+                    item.as_ref()
                 })
             })
     }
@@ -127,11 +129,6 @@ impl State {
     pub fn set_playback_state(&mut self, value: PlayerState) {
         self.playback_state = Some(serialize_player_state(value));
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct QueueItem {
-    pub item_id: Arc<str>,
 }
 
 fn state_path() -> PathBuf {

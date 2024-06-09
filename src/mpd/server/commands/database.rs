@@ -63,13 +63,6 @@ pub fn lsinfo(ctx: CommandContext<'_>) -> Response {
             response
         }
         TreeNode::File(id) => {
-            // let name = name.expect("File node always has a name");
-            // if let Some(request_url) = request_url {
-            //     response.add_field("file", format!("{request_url}/{name}"));
-            // } else {
-            //     response.add_field("file", name);
-            // }
-
             let item = db.items.get(id).unwrap();
             response.item(item)
         }

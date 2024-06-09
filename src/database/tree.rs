@@ -69,4 +69,11 @@ impl TreeNode {
         }
         Some(node)
     }
+
+    pub fn item_ids(&self) -> Vec<Arc<str>> {
+        match self {
+            TreeNode::Directory(dir) => dir.values().flat_map(|node| node.item_ids()).collect(),
+            TreeNode::File(id) => vec![id.clone()],
+        }
+    }
 }

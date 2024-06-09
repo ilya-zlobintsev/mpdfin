@@ -834,23 +834,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "gstreamer-player"
+name = "gstreamer-play"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5950d1d194935b27a0b2af99afe83dc9697149a1b55230f16c51eefe798c4a51"
+checksum = "04cd4315d97f8f38a6a6fdaad27d51cc67fd132785816091ad9985e197d2c052"
 dependencies = [
  "glib",
  "gstreamer",
- "gstreamer-player-sys",
+ "gstreamer-play-sys",
  "gstreamer-video",
  "libc",
 ]
 
 [[package]]
-name = "gstreamer-player-sys"
+name = "gstreamer-play-sys"
 version = "0.22.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31707b98f1a80f5b35a23eccf5ee4a55c40f488bca72804f52526c9ccd08762c"
+checksum = "5bdd875021fecd478d0ee3b787dc3fd41be86f83692c59344af2db6251028b3c"
 dependencies = [
  "glib-sys",
  "gobject-sys",
@@ -1108,7 +1108,7 @@ dependencies = [
  "event-listener 5.3.0",
  "futures-lite",
  "gstreamer",
- "gstreamer-player",
+ "gstreamer-play",
  "indexmap",
  "log",
  "serde",
@@ -1532,9 +1532,9 @@ dependencies = [
 
 [[package]]
 name = "simple_logger"
-version = "4.3.3"
+version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e7e46c8c90251d47d08b28b8a419ffb4aede0f87c2eea95e17d1d5bacbf3ef1"
+checksum = "e8c5dfa5e08767553704aa0ffd9d9794d527103c736aba9854773851fd7497eb"
 dependencies = [
  "colored",
  "log",

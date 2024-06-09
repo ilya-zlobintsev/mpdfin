@@ -1,4 +1,4 @@
-use gstreamer_player::PlayerState;
+use gstreamer_play::PlayState;
 use indexmap::IndexMap;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
@@ -127,11 +127,11 @@ impl State {
         }
     }
 
-    pub fn playback_state(&self) -> Option<PlayerState> {
+    pub fn playback_state(&self) -> Option<PlayState> {
         self.playback_state.and_then(deserialize_player_state)
     }
 
-    pub fn set_playback_state(&mut self, value: PlayerState) {
+    pub fn set_playback_state(&mut self, value: PlayState) {
         self.playback_state = Some(serialize_player_state(value));
     }
 }
@@ -143,22 +143,22 @@ fn state_path() -> PathBuf {
         .join("state.json")
 }
 
-fn serialize_player_state(state: PlayerState) -> u8 {
+fn serialize_player_state(state: PlayState) -> u8 {
     match state {
-        PlayerState::Stopped => 0,
-        PlayerState::Buffering => 1,
-        PlayerState::Paused => 2,
-        PlayerState::Playing => 3,
+        PlayState::Stopped => 0,
+        PlayState::Buffering => 1,
+        PlayState::Paused => 2,
+        PlayState::Playing => 3,
         _ => 4,
     }
 }
 
-fn deserialize_player_state(value: u8) -> Option<PlayerState> {
+fn deserialize_player_state(value: u8) -> Option<PlayState> {
     match value {
-        0 => Some(PlayerState::Stopped),
-        1 => Some(PlayerState::Buffering),
-        2 => Some(PlayerState::Paused),
-        3 => Some(PlayerState::Playing),
+        0 => Some(PlayState::Stopped),
+        1 => Some(PlayState::Buffering),
+        2 => Some(PlayState::Paused),
+        3 => Some(PlayState::Playing),
         _ => None,
     }
 }

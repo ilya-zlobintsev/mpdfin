@@ -1,7 +1,7 @@
 use super::CommandContext;
 use crate::mpd::{error::Error, server::read_request, Request, Response, Result, Subsystem};
 use futures_lite::future;
-use gstreamer_player::PlayerState;
+use gstreamer_play::PlayState;
 use std::borrow::Cow;
 use strum::VariantArray;
 
@@ -29,8 +29,8 @@ pub fn status(ctx: CommandContext<'_>) -> Response {
     }
 
     let playback_state = match player_state.playback_state() {
-        Some(PlayerState::Playing) | Some(PlayerState::Buffering) => "play",
-        Some(PlayerState::Paused) => "pause",
+        Some(PlayState::Playing) | Some(PlayState::Buffering) => "play",
+        Some(PlayState::Paused) => "pause",
         _ => "stop",
     };
 

@@ -3,7 +3,7 @@ use async_executor::LocalExecutor;
 use async_net::TcpListener;
 use async_signal::{Signal, Signals};
 use futures_lite::{future, StreamExt};
-use gstreamer_player::PlayerState;
+use gstreamer_play::PlayState;
 use jellyfin::{user::AuthenticateUserByName, JellyfinClient};
 use log::{debug, error, info};
 use mpdfin::{
@@ -215,8 +215,8 @@ fn start_media_control(ex: &LocalExecutor, server: Server) {
                         .media_position()
                         .map(|position| MediaPosition(Duration::from_millis(position)));
                     let playback = match server.player.playback_state() {
-                        PlayerState::Playing => souvlaki::MediaPlayback::Playing { progress },
-                        PlayerState::Paused => souvlaki::MediaPlayback::Paused { progress },
+                        PlayState::Playing => souvlaki::MediaPlayback::Playing { progress },
+                        PlayState::Paused => souvlaki::MediaPlayback::Paused { progress },
                         _ => souvlaki::MediaPlayback::Stopped,
                     };
                     debug!("Updating system media plabyack status to {playback:?}");

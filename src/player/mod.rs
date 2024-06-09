@@ -9,7 +9,7 @@ use crate::{
 };
 use glib::clone;
 use gstreamer::{glib, ClockTime};
-use gstreamer_player::{PlayerGMainContextSignalDispatcher, PlayerState, PlayerVideoRenderer};
+use gstreamer_play::{PlayMessage, PlayState, PlayVideoRenderer};
 use log::{debug, error, trace};
 use std::{
     cell::RefCell,
@@ -18,7 +18,7 @@ use std::{
 };
 
 pub struct Player {
-    media_player: gstreamer_player::Player,
+    media_player: gstreamer_play::Play,
 
     subsystem_notifier: SubsystemNotifier,
     state: Arc<RwLock<State>>,
@@ -36,40 +36,38 @@ impl Player {
     ) -> Self {
         gstreamer::init().expect("Failed to initialize gstreamer");
 
-        let main_loop = glib::MainLoop::new(None, false);
-
         let state = Arc::new(RwLock::new(state));
 
-        let dispatcher = PlayerGMainContextSignalDispatcher::new(None);
-        let media_player =
-            gstreamer_player::Player::new(None::<PlayerVideoRenderer>, Some(dispatcher));
+        let media_player = gstreamer_play::Play::new(None::<PlayVideoRenderer>);
 
         let mut config = media_player.config().clone();
         config.set_name("Mpdfin");
         config.set_user_agent("Mpdfin");
         media_player.set_config(config).unwrap();
 
-        media_player.connect_state_changed(
-            clone!(@strong subsystem_notifier, @strong state => move |_player, new_state| {
-                state.write().unwrap().set_playback_state(new_state);
+        blocking::unblock(
+            clone!(@strong media_player, @strong subsystem_notifier, @strong state => move || {
+                for msg in media_player.message_bus().iter_timed(ClockTime::NONE) {
+                    match PlayMessage::parse(&msg) {
+                        Ok(PlayMessage::StateChanged { state: new_state }) =>  {
+                            state.write().unwrap().set_playback_state(new_state);
 
-                subsystem_notifier.notify(Subsystem::Player);
-                subsystem_notifier.notify(Subsystem::Mixer);
+                            subsystem_notifier.notify(Subsystem::Player);
+                            subsystem_notifier.notify(Subsystem::Mixer);
+                        }
+                        Ok(PlayMessage::VolumeChanged { .. }) =>  {
+                            subsystem_notifier.notify(Subsystem::Player);
+                            subsystem_notifier.notify(Subsystem::Mixer);
+                        }
+                        Ok(PlayMessage::Error { error, details }) => {
+                            error!("Playback error: {error}, {details:?}");
+                        }
+                        _ => (),
+                    }
+                }
             }),
-        );
-
-        media_player.connect_volume_changed(clone!(@strong subsystem_notifier => move |_player| {
-            subsystem_notifier.notify(Subsystem::Player);
-            subsystem_notifier.notify(Subsystem::Mixer);
-        }));
-
-        media_player.connect_error(|_player, err| {
-            error!("Player error: {err}");
-        });
-
-        std::thread::spawn(move || {
-            main_loop.run();
-        });
+        )
+        .detach();
 
         let player = Self {
             media_player,
@@ -90,8 +88,8 @@ impl Player {
 
         if let Some(player_state) = player.state().playback_state() {
             match player_state {
-                PlayerState::Buffering | PlayerState::Playing => player.play(),
-                PlayerState::Paused => player.pause(),
+                PlayState::Buffering | PlayState::Playing => player.play(),
+                PlayState::Paused => player.pause(),
                 _ => (),
             }
         }
@@ -136,7 +134,7 @@ impl Player {
     }
 
     pub fn is_playing(&self) -> bool {
-        self.state.read().unwrap().playback_state() == Some(PlayerState::Playing)
+        self.state.read().unwrap().playback_state() == Some(PlayState::Playing)
     }
 
     pub fn play(&self) {
@@ -205,10 +203,8 @@ impl Player {
         self.stop();
     }
 
-    pub fn playback_state(&self) -> PlayerState {
-        self.state()
-            .playback_state()
-            .unwrap_or(PlayerState::Stopped)
+    pub fn playback_state(&self) -> PlayState {
+        self.state().playback_state().unwrap_or(PlayState::Stopped)
     }
 
     /// In ms

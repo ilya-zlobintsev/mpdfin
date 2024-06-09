@@ -12,7 +12,7 @@ async-signal = "0.2.6"
 blocking = "1.5.1"
 futures-lite = "2.3.0"
 
-gstreamer-player = "0.22.0"
+gstreamer-play = "0.22.0"
 gstreamer = "0.22.5"
 souvlaki = "0.7.3"
 
@@ -28,7 +28,7 @@ chrono = { version = "0.4.38", features = ["serde"] }
 indexmap = { version = "2.2.6", features = ["serde"] }
 
 log = "0.4.21"
-simple_logger = "4.3.3"
+simple_logger = "5.0.0"
 
 ureq = { version = "2.9.6", features = ["json"] }
 

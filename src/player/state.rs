@@ -29,6 +29,11 @@ impl State {
         self.current_pos
     }
 
+    pub fn current_id(&self) -> Option<u64> {
+        self.current_pos
+            .map(|pos| *self.queue.get_index(pos).unwrap().0)
+    }
+
     pub fn playlist_version(&self) -> u64 {
         self.playlist_version
     }

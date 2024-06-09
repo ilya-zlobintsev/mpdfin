@@ -88,3 +88,64 @@ pub fn next(ctx: CommandContext<'_>) -> Result<Response> {
     ctx.player().next();
     Ok(Response::new())
 }
+
+pub fn seek(ctx: CommandContext<'_>) -> Result<Response> {
+    let pos = ctx
+        .args
+        .first()
+        .ok_or_else(|| Error::InvalidArg("Position was not provided".to_owned()))?
+        .parse::<usize>()
+        .map_err(|_| Error::InvalidArg("Invalid position provided".to_owned()))?;
+
+    let time = ctx
+        .args
+        .get(1)
+        .ok_or_else(|| Error::InvalidArg("Time was not provided".to_owned()))?
+        .parse::<f64>()
+        .map_err(|_| Error::InvalidArg("Invalid time provided".to_owned()))?;
+
+    if ctx.player().state().current_pos() != Some(pos) {
+        ctx.player().play_by_pos(pos);
+    }
+
+    ctx.player().seek(time);
+
+    Ok(Response::new())
+}
+
+pub fn seekid(ctx: CommandContext<'_>) -> Result<Response> {
+    let id = ctx
+        .args
+        .first()
+        .ok_or_else(|| Error::InvalidArg("Position was not provided".to_owned()))?
+        .parse::<u64>()
+        .map_err(|_| Error::InvalidArg("Invalid position provided".to_owned()))?;
+
+    let time = ctx
+        .args
+        .get(1)
+        .ok_or_else(|| Error::InvalidArg("Time was not provided".to_owned()))?
+        .parse::<f64>()
+        .map_err(|_| Error::InvalidArg("Invalid time provided".to_owned()))?;
+
+    if ctx.player().state().current_id() != Some(id) {
+        ctx.player().play_by_id(id);
+    }
+
+    ctx.player().seek(time);
+
+    Ok(Response::new())
+}
+
+pub fn seekcur(ctx: CommandContext<'_>) -> Result<Response> {
+    let time = ctx
+        .args
+        .first()
+        .ok_or_else(|| Error::InvalidArg("Time was not provided".to_owned()))?
+        .parse::<f64>()
+        .map_err(|_| Error::InvalidArg("Invalid time provided".to_owned()))?;
+
+    ctx.player().seek(time);
+
+    Ok(Response::new())
+}

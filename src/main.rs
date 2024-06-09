@@ -163,6 +163,9 @@ fn start_media_control(ex: &LocalExecutor, server: Server) {
                     player.set_volume((value * 100.0) as i32);
                 }
                 souvlaki::MediaControlEvent::OpenUri(_) => todo!(),
+                souvlaki::MediaControlEvent::SetPosition(position) => {
+                    player.seek(position.0.as_millis() as f64 / 1000.0);
+                }
                 _ => (),
             }
         }
@@ -192,9 +195,9 @@ fn start_media_control(ex: &LocalExecutor, server: Server) {
                         if let Some(item) = db.items.get(item_id) {
                             metadata.title = item.name.as_deref();
                             metadata.album = item.album.as_deref();
-                            metadata.duration = item
-                                .run_time_ticks
-                                .map(|ticks| Duration::from_millis(ticks / 10000));
+                            // metadata.duration = item
+                            //     .run_time_ticks
+                            //     .map(|ticks| Duration::from_millis(ticks / 10000));
 
                             artist = item.album_artist.clone().or_else(|| {
                                 if item.artists.is_empty() {

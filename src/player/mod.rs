@@ -128,6 +128,13 @@ impl Player {
         self.subsystem_notifier.notify(Subsystem::Player);
     }
 
+    /// Time in seconds
+    pub fn seek(&self, time: f64) {
+        debug!("Seeking to {time}");
+        self.media_player
+            .seek(ClockTime::from_mseconds((time * 1000.0) as u64));
+    }
+
     pub fn is_playing(&self) -> bool {
         self.state.read().unwrap().playback_state() == Some(PlayerState::Playing)
     }

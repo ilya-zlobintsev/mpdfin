@@ -87,7 +87,8 @@ partial class CommandHandler
             Command.update => Update(),
             Command.listplaylists => ListPlaylists(),
             Command.shuffle => Shuffle(request.Args.FirstOrDefault()),
-            _ => throw new NotImplementedException($"Command {request.Command} not implemented or cannot be called in the current context"),
+            _ => throw new NotImplementedException(
+                $"Command {request.Command} not implemented or cannot be called in the current context"),
         };
     }
 
@@ -122,12 +123,11 @@ partial class CommandHandler
         foreach (var queuedRequest in requestList)
         {
             var response = await HandleRequest(queuedRequest, stream);
-            totalResponse.Extend(response.Value);
+            if (response is not null)
+                totalResponse.Extend(response.Value);
 
             if (printOk)
-            {
                 totalResponse.AppendListOk();
-            }
         }
 
         return totalResponse;

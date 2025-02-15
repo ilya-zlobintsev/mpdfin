@@ -32,7 +32,7 @@ Database db;
 JellyfinClient client;
 
 var auth = await JellyfinClient.Authenticate(jellyfinConfig.ServerUrl, jellyfinConfig.Username, jellyfinConfig.Password);
-Log.Information($"Logged in as {auth.User.Name}");
+Log.Information($"Logged in as {auth!.User!.Name}");
 
 var storage = DatabaseStorage.Load();
 if (storage is null)

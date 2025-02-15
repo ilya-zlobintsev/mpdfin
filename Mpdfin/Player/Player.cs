@@ -408,9 +408,9 @@ public class Player
 
                 metadata = new()
                 {
-                    title = song.Name,
-                    album = song.Album,
-                    artist = string.Join(", ", song.Artists),
+                    title = song.Name ?? "<Untitled>",
+                    album = song.Album ?? "<No Album>",
+                    artist = string.Join(", ", song.Artists ?? ["<No Artist>"]),
                 };
             }
             else

@@ -1,5 +1,5 @@
 using DistIL.Attributes;
-using Jellyfin.Sdk;
+using Jellyfin.Sdk.Generated.Models;
 using Mpdfin.Mpd;
 
 namespace Mpdfin.DB;
@@ -16,7 +16,7 @@ public record Node
         Children = [];
     }
 
-    public Node(BaseItemDto item) : this(u8(item.Name))
+    public Node(BaseItemDto item) : this(u8(item.Name!))
     {
         ItemId = item.Id;
     }

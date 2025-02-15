@@ -1,6 +1,6 @@
 using System.Buffers.Text;
 using DistIL.Attributes;
-using Jellyfin.Sdk;
+using Jellyfin.Sdk.Generated.Models;
 using Mpdfin.DB;
 
 namespace Mpdfin.Mpd;
@@ -47,7 +47,7 @@ static class Extensions
         var response = new Response();
         var tags = U8Enum.GetNames<Tag>().Zip(U8Enum.GetValues<Tag>());
 
-        response.Append("file"u8, item.Id);
+        response.Append("file"u8, item.Id!.Value);
 
         foreach (var (key, tag) in tags)
         {

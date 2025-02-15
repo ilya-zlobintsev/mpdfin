@@ -9,7 +9,7 @@ partial class CommandHandler
     {
         if (uri.Length == 0)
         {
-            var items = Db.Items.OrderItems().Select(song => song.Id).ToArray();
+            var items = Db.Items.OrderItems().Select(song => song.Id!.Value).ToArray();
             Player.AddMany(items);
         }
         else
@@ -37,13 +37,11 @@ partial class CommandHandler
         var song = Db.Items.FirstOrDefault(item => item.Id == uri);
         if (song is not null)
         {
-            var queueId = Player.Add(song.Id, parsedPos);
+            var queueId = Player.Add(song.Id!.Value, parsedPos);
             return new Response().Append("Id"u8, queueId);
         }
-        else
-        {
-            throw new FileNotFoundException($"Item {uri} not found");
-        }
+
+        throw new FileNotFoundException($"Item {uri} not found");
     }
 
     Response Delete(U8String input)

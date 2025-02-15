@@ -1,4 +1,4 @@
-using Jellyfin.Sdk;
+using Jellyfin.Sdk.Generated.Models;
 
 namespace Mpdfin.Mpd;
 
@@ -25,8 +25,6 @@ static class FilterExtensions
     {
         var tagValues = item.GetTagValue(filter.Tag);
 
-        return tagValues != null
-            ? tagValues.Contains(filter.Value!.Value)
-            : filter.Value is null or [];
+        return tagValues?.Contains(filter.Value!.Value) ?? filter.Value is null or [];
     }
 }

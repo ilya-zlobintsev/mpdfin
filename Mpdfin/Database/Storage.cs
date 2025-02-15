@@ -1,7 +1,6 @@
-using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Jellyfin.Sdk;
+using Jellyfin.Sdk.Generated.Models;
 using Serilog;
 
 namespace Mpdfin.DB;
@@ -48,7 +47,7 @@ public class DatabaseStorage
         Directory.CreateDirectory(DataDir());
 
         var filePath = FilePath();
-        using var file = File.OpenWrite(filePath);
+        await using var file = File.OpenWrite(filePath);
         await JsonSerializer.SerializeAsync(
             file, this, DatabaseSerializerContext.Default.DatabaseStorage);
 

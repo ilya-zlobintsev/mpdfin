@@ -1,7 +1,5 @@
 using DistIL.Attributes;
-
-using Jellyfin.Sdk;
-
+using Jellyfin.Sdk.Generated.Models;
 using Serilog;
 
 namespace Mpdfin.DB;
@@ -40,22 +38,24 @@ public class Database
             OnUpdate(this, new());
         }
 
-        var views = await Client.UserViewsClient.GetUserViewsAsync(Client.CurrentUser.Id);
+        var views = await Client.ApiClient.UserViews.GetAsync();
 
-        var musicCollection = views.Items.Single(item => item.CollectionType == "music");
+        var musicCollection = views?.Items?.Single(item => item.CollectionType == BaseItemDto_CollectionType.Music);
 
         if (musicCollection is not null)
         {
             Log.Debug($"Using music collection with id {musicCollection.Id}");
 
-            var itemsResponse = await Client.ItemsClient.GetItemsByUserIdAsync(
-                Client.CurrentUser.Id,
-                recursive: true,
-                parentId: musicCollection.Id,
-                includeItemTypes: [BaseItemKind.Audio]);
+            var itemsResponse = await Client.ApiClient.Items.GetAsync(request =>
+            {
+                request.QueryParameters.UserId = Client.CurrentUser.Id!;
+                request.QueryParameters.Recursive = true;
+                request.QueryParameters.ParentId = musicCollection.Id!;
+                request.QueryParameters.IncludeItemTypes = [BaseItemKind.Audio];
 
-            Items = itemsResponse.Items as List<BaseItemDto>
-                ?? itemsResponse.Items.ToList();
+            });
+
+            Items = itemsResponse?.Items ?? throw new ArgumentNullException(nameof(itemsResponse));
             FilesystemRoot = Node.BuildTree(this);
 
             Log.Debug($"Loaded {Items.Count} items");

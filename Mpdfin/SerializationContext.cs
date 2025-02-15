@@ -10,6 +10,5 @@ namespace Mpdfin;
 partial class SerializerContext : JsonSerializerContext;
 
 [JsonSerializable(typeof(DatabaseStorage))]
-[JsonSerializable(typeof(Jellyfin.Sdk.QueueItem))]
 [JsonSourceGenerationOptions(UseStringEnumConverter = true)]
 partial class DatabaseSerializerContext : JsonSerializerContext;

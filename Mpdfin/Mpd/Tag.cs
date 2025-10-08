@@ -49,9 +49,20 @@ static class TagExtractor
             Tag.Artist => item.Artists?.Select(U8String.Create).ToArray(),
             Tag.AlbumArtist => item.AlbumArtist?.ToSingleItemArray(),
             Tag.Genre => item.Genres?.Select(U8String.Create).ToArray(),
-            Tag.Date => item.PremiereDate?.ToU8String("yyyy-MM-dd").ToSingleItemArray(),
+            Tag.Date => item.GetDate()?.ToSingleItemArray(),
             Tag.Track => item.IndexNumber?.ToU8String().ToSingleItemArray(),
             _ => null,
         };
     }
+
+    static U8String? GetDate(this BaseItemDto item)
+    {
+        DateTimeOffset?[] possibleDates = [item.PremiereDate, item.EndDate];
+        foreach (var possibleDate in possibleDates)
+            if (possibleDate is not null && possibleDate.Value.Year != 1)
+                return possibleDate.Value.ToU8String("yyyy-MM-dd");
+
+        return item.ProductionYear?.ToU8String();
+    }
 }
+

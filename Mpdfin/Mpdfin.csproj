@@ -13,15 +13,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>mpdfin</AssemblyName>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishTrimmed>true</PublishTrimmed>
-    <NoWarn>SYSLIB1034</NoWarn>
-    <TrimMode>partial</TrimMode>
-    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <PublishAot>true</PublishAot>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);U8.Generated</InterceptorsPreviewNamespaces>
   </PropertyGroup>
 
@@ -30,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Sdk" Version="2025.2.15-unstable.202502150050" />
+    <PackageReference Include="Jellyfin.Sdk" Version="2025.10.8-unstable.202510080050" />
     <PackageReference Include="LibVLCSharp" Version="3.8.2" />
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />

@@ -1,5 +1,4 @@
 using System.Buffers.Text;
-using DistIL.Attributes;
 using Jellyfin.Sdk.Generated.Models;
 using Mpdfin.DB;
 
@@ -20,7 +19,7 @@ static class Extensions
         return new AsyncLock { Lock = semaphore };
     }
 
-    [Optimize]
+    
     public static Response GetResponse(this Player.QueueItem item, Database db)
     {
         var song = db.GetItem(item.SongId) ?? throw new Exception("ID not found in database");
@@ -75,13 +74,13 @@ static class Extensions
         return [u8(value)];
     }
 
-    [Optimize]
+    
     public static IOrderedEnumerable<U8String> GetUniqueTagValues(this Database db, Tag tag)
     {
         return db.Items.SelectMany(item => item.GetTagValue(tag) ?? []).Distinct().Order();
     }
 
-    [Optimize]
+    
     public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, Tag tag, U8String value)
     {
         return db.Items
@@ -89,13 +88,13 @@ static class Extensions
             .OrderItems();
     }
 
-    [Optimize]
+    
     public static IOrderedEnumerable<BaseItemDto> GetMatchingItems(this Database db, List<Filter> filters)
     {
         return db.Items.Where(item => filters.All(item.MatchesFilter)).OrderItems();
     }
 
-    [Optimize]
+    
     public static IOrderedEnumerable<BaseItemDto> OrderItems(this IEnumerable<BaseItemDto> items)
     {
         return items.OrderBy(item => (

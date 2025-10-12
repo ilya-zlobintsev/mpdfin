@@ -1,4 +1,3 @@
-using DistIL.Attributes;
 using Jellyfin.Sdk.Generated.Models;
 using Mpdfin.Mpd;
 
@@ -31,13 +30,13 @@ public record Node
         Children = children;
     }
 
-    [Optimize]
+    
     public Node? Navigate(U8String name)
     {
         return Children.FirstOrDefault(child => child.Name == name);
     }
 
-    [Optimize]
+    
     public static Node BuildTree(Database db)
     {
         List<Node> rootNodes = [];

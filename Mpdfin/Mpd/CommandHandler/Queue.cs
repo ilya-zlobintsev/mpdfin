@@ -1,10 +1,9 @@
-using DistIL.Attributes;
 
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    [Optimize]
+    
     Response Add(U8String uri, U8String pos)
     {
         if (uri.Length == 0)
@@ -20,7 +19,7 @@ partial class CommandHandler
         return new();
     }
 
-    [Optimize]
+    
     Response AddId(Guid uri, U8String pos)
     {
         int? parsedPos = null;

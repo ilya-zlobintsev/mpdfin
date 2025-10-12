@@ -1,4 +1,3 @@
-using DistIL.Attributes;
 using Jellyfin.Sdk.Generated.Models;
 using Serilog;
 
@@ -17,9 +16,10 @@ public class Database
         get => Storage.Items;
         private set => Storage.Items = value;
     }
+
     public Node FilesystemRoot;
 
-    [Optimize]
+    
     public BaseItemDto? GetItem(Guid id) => Items.FirstOrDefault(item => item.Id == id);
 
     public Database(JellyfinClient client, DatabaseStorage storage)
@@ -29,13 +29,13 @@ public class Database
         FilesystemRoot = Node.BuildTree(this);
     }
 
-    [Optimize]
+    
     public async Task Update()
     {
         Log.Information("Updating database");
         if (OnUpdate is not null)
         {
-            OnUpdate(this, new());
+            OnUpdate(this, EventArgs.Empty);
         }
 
         var views = await Client.ApiClient.UserViews.GetAsync();
@@ -52,7 +52,6 @@ public class Database
                 request.QueryParameters.Recursive = true;
                 request.QueryParameters.ParentId = musicCollection.Id!;
                 request.QueryParameters.IncludeItemTypes = [BaseItemKind.Audio];
-
             });
 
             Items = itemsResponse?.Items ?? throw new ArgumentNullException(nameof(itemsResponse));

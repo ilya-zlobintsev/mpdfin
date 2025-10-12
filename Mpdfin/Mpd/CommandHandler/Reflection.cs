@@ -1,10 +1,9 @@
-using DistIL.Attributes;
 
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    [Optimize]
+    
     static Response Commands()
     {
         return U8Enum

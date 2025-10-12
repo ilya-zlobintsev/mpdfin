@@ -1,11 +1,10 @@
-using DistIL.Attributes;
 using Serilog;
 
 namespace Mpdfin.Mpd;
 
 partial class CommandHandler
 {
-    [Optimize]
+    
     Response List(Tag tag)
     {
         var key = tag.ToU8String();
@@ -15,7 +14,7 @@ partial class CommandHandler
         return values.Aggregate(response, (r, v) => r.Append(key, v));
     }
 
-    [Optimize]
+    
     Response Find(List<Filter> filters)
     {
         return Db
@@ -24,7 +23,7 @@ partial class CommandHandler
             .Aggregate(new Response(), (r, i) => r.Extend(i));
     }
 
-    [Optimize]
+    
     Response LsInfo(U8String uri)
     {
         var parts = uri.Split((byte)'/', U8SplitOptions.RemoveEmpty);

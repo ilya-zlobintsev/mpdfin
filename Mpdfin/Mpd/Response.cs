@@ -19,12 +19,11 @@ readonly record struct Response
 
     public Response Append(ReadOnlySpan<byte> key, ICollection<U8String>? values)
     {
-        if (values is not null)
+        if (values is null) return this;
+        
+        foreach (var value in values)
         {
-            foreach (var value in values)
-            {
-                Append(key, value);
-            }
+            Append(key, value);
         }
 
         return this;

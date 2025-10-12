@@ -1,4 +1,3 @@
-using DistIL.Attributes;
 using LibVLCSharp.Shared;
 using Serilog;
 
@@ -56,7 +55,7 @@ partial class CommandHandler
         return Player.CurrentSong?.GetResponse(Db) ?? new();
     }
 
-    [Optimize]
+    
     Response Stats()
     {
         Response response = new();
@@ -68,7 +67,7 @@ partial class CommandHandler
         return response;
     }
 
-    [Optimize]
+    
     async Task<Response> Idle(ClientStream stream, List<U8String> args)
     {
         var subsystems = args.Count > 0
